@@ -2,12 +2,13 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://tokenlux-api.tokenluxservice.workers.dev" crossorigin>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>TokenLux</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 
 <style>
 *{
@@ -710,7 +711,7 @@ body::before{
 .nav-inner{
     width:min(700px,100%);
     display:grid;
-    grid-template-columns:repeat(4,1fr);
+    grid-template-columns:repeat(3,1fr);
 }
 
 .nav button{
@@ -748,6 +749,18 @@ body::before{
     background:linear-gradient(90deg,var(--accent),var(--accent2));
     box-shadow:0 0 10px rgba(245,211,79,.7);
 }
+
+/* ===== TOP / STAR LEADERBOARD ===== */
+.top-tabs{display:flex;gap:8px;margin:0 0 16px;padding:5px;background:#111116;border:1px solid var(--line);border-radius:14px}
+.top-tab{flex:1;border:0;background:transparent;color:#777783;padding:11px 12px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;transition:.2s}
+.top-tab.active{color:#0a0a12;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 7px 20px rgba(245,211,79,.18)}
+.top-hero{position:relative;overflow:hidden;padding:22px;border-radius:20px;margin-bottom:16px;background:radial-gradient(circle at 85% 20%,rgba(245,211,79,.18),transparent 34%),linear-gradient(145deg,#1b1a22,#0f0f14);border:1px solid rgba(245,211,79,.2)}
+.top-hero h1{font-family:var(--font-display);font-size:22px;font-weight:700}.top-hero p{margin-top:7px;color:var(--muted);font-size:12px;line-height:1.45}
+.top-list{display:flex;flex-direction:column;gap:9px}.top-user{display:grid;grid-template-columns:34px 44px minmax(0,1fr) auto;align-items:center;gap:10px;padding:11px 12px;border-radius:15px;background:linear-gradient(145deg,#19181d,#111116);border:1px solid #29282f;transition:.2s}.top-user:hover{transform:translateY(-2px);border-color:rgba(245,211,79,.35);box-shadow:0 12px 28px rgba(0,0,0,.28)}
+.top-user.rank-1{border-color:rgba(245,211,79,.55);box-shadow:0 0 28px rgba(245,211,79,.08)}.top-user.rank-2{border-color:rgba(190,195,205,.3)}.top-user.rank-3{border-color:rgba(205,145,85,.32)}
+.top-rank{font-family:var(--font-display);font-size:13px;text-align:center;color:#777783}.top-user.rank-1 .top-rank{color:#f5d34f}.top-user.rank-2 .top-rank{color:#cfd2d8}.top-user.rank-3 .top-rank{color:#d79a62}
+.top-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:linear-gradient(135deg,#302d20,#1b1912);border:1px solid rgba(245,211,79,.2);font-weight:900}.top-avatar img{width:100%;height:100%;object-fit:cover}.top-user-info{min-width:0}.top-user-name{font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.top-user-sub{margin-top:3px;color:#777783;font-size:9px}.top-stars{color:#f5d34f;font-weight:900;font-size:12px;white-space:nowrap}.top-empty{padding:34px 18px;text-align:center;color:#777783;background:#111116;border:1px solid #25252d;border-radius:15px}.top-refresh{margin-top:12px;width:100%;height:40px;border:1px solid rgba(245,211,79,.2);border-radius:11px;background:#17161b;color:#f5d34f;font-weight:900;cursor:pointer}
+@media(max-width:500px){.top-hero{padding:18px}.top-user{grid-template-columns:28px 38px minmax(0,1fr) auto;gap:8px;padding:9px}.top-avatar{width:38px;height:38px}.top-stars{font-size:10px}}
 
 /* TOAST */
 
@@ -1888,206 +1901,1345 @@ body::before{
 }
 
 
-/* MiniApp anti-select polish */
-html, body {
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
+/* =========================================================
+   TOKENLUX — MOBILE UI PATCH
+   Desktop styles above are intentionally left unchanged.
+   Everything below activates only on touch/small screens.
+   ========================================================= */
+
+@media (max-width: 600px){
+    :root{
+        --mobile-gutter:12px;
+        --mobile-radius:14px;
+    }
+
+    html{
+        width:100%;
+        min-height:100%;
+        -webkit-text-size-adjust:100%;
+    }
+
+    body{
+        min-height:100dvh;
+        padding-bottom:env(safe-area-inset-bottom);
+        overflow-x:hidden;
+        -webkit-tap-highlight-color:transparent;
+    }
+
+    .app{
+        width:100%;
+        max-width:none;
+        margin:0;
+        padding:0 0 calc(82px + env(safe-area-inset-bottom));
+    }
+
+    /* Compact Telegram-style top bar */
+    .header{
+        height:58px;
+        min-height:58px;
+        padding:0 var(--mobile-gutter);
+        gap:8px;
+        background:rgba(10,10,16,.94);
+        backdrop-filter:blur(18px);
+        -webkit-backdrop-filter:blur(18px);
+    }
+
+    .brand{gap:8px;min-width:0}
+    .logo{
+        width:34px;
+        height:34px;
+        min-width:34px;
+        border-radius:10px;
+        font-size:17px;
+    }
+
+    .brand > div:last-child{min-width:0}
+    .brand-name{
+        font-size:12px;
+        letter-spacing:0;
+        white-space:nowrap;
+    }
+    .brand-sub{
+        display:none;
+    }
+
+    .balance{
+        gap:6px;
+        margin-left:auto;
+    }
+    .balance-box{
+        padding:7px 9px;
+        border-radius:10px;
+        font-size:12px;
+        white-space:nowrap;
+    }
+    .balance-icon{font-size:13px}
+    .add{
+        width:34px;
+        height:34px;
+        min-width:34px;
+        border-radius:10px;
+        font-size:18px;
+    }
+
+    .content{
+        width:100%;
+        padding:12px var(--mobile-gutter) 18px;
+    }
+
+    /* Home hero */
+    .hero{
+        min-height:0;
+        padding:18px;
+        border-radius:18px;
+    }
+    .hero:after{
+        right:8px;
+        top:8px;
+        font-size:70px;
+    }
+    .hero-tag{
+        padding:5px 8px;
+        margin-bottom:10px;
+        font-size:9px;
+    }
+    .hero h1{
+        max-width:78%;
+        font-size:20px;
+        line-height:1.22;
+    }
+    .hero p{
+        max-width:100%;
+        margin-top:8px;
+        font-size:12px;
+        line-height:1.45;
+    }
+    .hero-btn{
+        width:100%;
+        margin-top:14px;
+        padding:11px 14px;
+        min-height:44px;
+        border-radius:11px;
+        font-size:13px;
+    }
+
+    .section-head{
+        margin:20px 2px 10px;
+    }
+    .section-head h2{
+        font-size:14px;
+    }
+    .section-head span{
+        font-size:10px;
+    }
+
+    /* Cases: always compact two-column cards */
+    .cases{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:9px;
+    }
+    .case{
+        min-width:0;
+        padding:8px;
+        border-radius:14px;
+    }
+    .case:hover{
+        transform:none;
+    }
+    .case-image{
+        height:104px;
+        border-radius:10px;
+        font-size:48px;
+    }
+    .case-name{
+        margin-top:8px;
+        font-size:11px;
+        line-height:1.25;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+    .case-info{
+        margin-top:5px;
+        font-size:9px;
+        gap:4px;
+    }
+    .case-info > *{
+        min-width:0;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    /* Opened case */
+    .case-open{
+        margin-top:12px;
+        padding:15px 12px;
+        border-radius:16px;
+    }
+    .case-big{
+        width:min(52vw,170px);
+        height:min(52vw,170px);
+        margin:2px auto 14px;
+        border-radius:18px;
+        font-size:76px;
+    }
+    .case-open h2{
+        font-size:17px;
+        line-height:1.25;
+    }
+    .case-open p{
+        margin:6px 0 12px;
+        font-size:11px;
+        line-height:1.4;
+    }
+    .open-btn{
+        max-width:none;
+        min-height:46px;
+        height:46px;
+        border-radius:11px;
+        font-size:13px;
+    }
+
+    /* Roulette fits the viewport instead of creating horizontal overflow */
+    .roulette-wrap{
+        width:100%;
+        margin:14px auto 10px;
+    }
+    .roulette-title{
+        font-size:9px;
+        margin-bottom:7px;
+    }
+    .roulette-window{
+        height:118px;
+        border-radius:13px;
+    }
+    .roulette-window:before,
+    .roulette-window:after{
+        width:42px;
+    }
+    .roulette-track{
+        top:6px;
+        height:106px;
+        gap:6px;
+    }
+    .roulette-item{
+        flex-basis:88px;
+        height:104px;
+        padding:5px;
+        border-radius:10px;
+    }
+    .roulette-item img{
+        height:66px;
+        border-radius:6px;
+    }
+    .roulette-item-name{
+        margin-top:4px;
+        font-size:7px;
+    }
+    .roulette-item-rarity{
+        margin-top:2px;
+        font-size:6px;
+    }
+    .roulette-status{
+        min-height:25px;
+        font-size:9px;
+        padding:0 8px;
+    }
+
+    .drop-info{
+        max-width:none;
+        margin:12px 0 3px;
+        padding:12px;
+        border-radius:13px;
+    }
+    .drop-info-head{
+        margin-bottom:9px;
+    }
+    .drop-info-head h3{
+        font-size:13px;
+    }
+    .drop-info-count{
+        font-size:9px;
+    }
+    .drop-list{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:7px;
+    }
+    .drop-card{
+        min-width:0;
+        padding:7px;
+        border-radius:10px;
+    }
+    .drop-card-img{
+        height:56px;
+        margin-bottom:5px;
+        border-radius:7px;
+    }
+    .drop-card-name{
+        font-size:8px;
+    }
+    .drop-card-rarity{
+        margin-top:2px;
+        font-size:7px;
+    }
+    .drop-card-chance{
+        top:5px;
+        right:5px;
+        padding:2px 4px;
+        font-size:7px;
+    }
+
+    /* Inventory */
+    .inventory-top{
+        gap:6px;
+        margin-bottom:10px;
+        overflow-x:auto;
+        scrollbar-width:none;
+    }
+    .inventory-top::-webkit-scrollbar{display:none}
+    .filter{
+        flex:0 0 auto;
+        min-height:34px;
+        padding:7px 10px;
+        border-radius:9px;
+        font-size:10px;
+    }
+
+    .inventory{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:9px;
+    }
+    .nft{
+        min-width:0;
+        padding:8px;
+        border-radius:13px;
+    }
+    .nft-img{
+        height:118px;
+        border-radius:9px;
+        font-size:46px;
+    }
+    .rarity{
+        top:13px;
+        left:13px;
+        padding:3px 5px;
+        font-size:7px;
+    }
+    .nft-name{
+        margin-top:7px;
+        font-size:10px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+    .nft-price{
+        margin-top:4px;
+        font-size:9px;
+        line-height:1.3;
+    }
+    .sell-nft-btn{
+        min-height:32px;
+        margin-top:7px;
+        padding:6px 4px;
+        border-radius:8px;
+        font-size:8px;
+    }
+
+    /* Catalog */
+    .nft-catalog-top{
+        margin:-2px 2px 11px;
+        gap:3px;
+    }
+    .nft-catalog-sub{font-size:10px}
+    .nft-catalog-hint{font-size:9px}
+    .nft-catalog,
+    .nft-category-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:9px;
+    }
+    .nft-catalog-grouped{
+        gap:18px;
+        margin-top:5px;
+    }
+    .rarity-category-title{
+        gap:7px;
+        margin-bottom:8px;
+    }
+    .rarity-title-badge{
+        min-width:0;
+        padding:6px 9px;
+        border-radius:7px;
+        font-size:9px;
+        letter-spacing:1px;
+    }
+    .rarity-category-count{
+        font-size:9px;
+    }
+    .catalog-nft{
+        min-width:0;
+        padding:7px;
+        border-radius:13px;
+    }
+    .catalog-nft:hover{
+        transform:none;
+    }
+    .catalog-nft-img{
+        height:135px;
+        border-radius:9px;
+    }
+    .catalog-nft-name{
+        margin:7px 2px 0;
+        font-size:10px;
+    }
+    .catalog-nft-price{
+        margin:4px 2px 0;
+        font-size:10px;
+    }
+    .catalog-nft-meta,
+    .catalog-nft-case{
+        margin-top:3px;
+        font-size:8px;
+    }
+    .catalog-nft .rarity{
+        top:12px;
+        left:12px;
+    }
+
+    /* Profile */
+    .profile{
+        padding-top:4px;
+    }
+    .avatar{
+        width:68px;
+        height:68px;
+        margin:5px auto 8px;
+        font-size:29px;
+    }
+    .profile h2{
+        font-size:18px;
+        margin-top:5px;
+    }
+    .title-row{
+        margin-top:6px;
+        gap:5px;
+    }
+    .player-title{font-size:11px}
+    .title-help{
+        width:18px;
+        height:18px;
+        font-size:10px;
+    }
+    .stats{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+        margin-top:16px;
+    }
+    .stat{
+        min-width:0;
+        padding:13px 9px;
+        border-radius:12px;
+    }
+    .stat strong{
+        font-size:16px;
+    }
+    .stat span{
+        font-size:9px;
+        line-height:1.25;
+    }
+
+    .profile-catalog-block{
+        margin-top:16px;
+    }
+    .profile-menu-btn{
+        padding:12px;
+        gap:10px;
+        border-radius:12px;
+    }
+    .profile-menu-icon{
+        width:36px;
+        height:36px;
+        border-radius:10px;
+        font-size:18px;
+    }
+    .profile-menu-text strong{font-size:11px}
+    .profile-menu-text small{font-size:9px}
+    .profile-menu-arrow{font-size:23px}
+    .nft-catalog-panel{
+        margin-top:9px;
+        padding:10px;
+        border-radius:12px;
+    }
+
+    /* Bottom navigation — thumb friendly + safe area */
+    .nav{
+        padding-bottom:env(safe-area-inset-bottom);
+        background:rgba(10,10,16,.96);
+        backdrop-filter:blur(18px);
+        -webkit-backdrop-filter:blur(18px);
+    }
+    .nav-inner{
+        width:100%;
+        max-width:520px;
+    }
+    .nav button{
+        min-height:58px;
+        padding:8px 3px 7px;
+        font-size:9px;
+    }
+    .nav button div{
+        font-size:18px;
+        margin-bottom:2px;
+    }
+    .nav button.active::before{
+        width:22px;
+        height:2px;
+    }
+
+    /* Modals stay inside the phone viewport */
+    .titles-modal.open{
+        padding:12px;
+        align-items:flex-end;
+    }
+    .titles-modal-card{
+        width:100%;
+        max-height:82dvh;
+        border-radius:18px 18px 12px 12px;
+        padding:14px;
+    }
+    .titles-modal-head h2{font-size:17px}
+    .titles-modal-head p{font-size:10px}
+    .title-item{
+        padding:10px;
+        gap:9px;
+        border-radius:11px;
+    }
+    .title-item strong{font-size:11px}
+    .title-item small{font-size:9px}
+
+    .toast{
+        left:12px;
+        right:12px;
+        width:auto;
+        bottom:calc(70px + env(safe-area-inset-bottom));
+        transform:translateY(16px);
+        padding:10px 13px;
+        border-radius:11px;
+        font-size:11px;
+        text-align:center;
+    }
+    .toast.show{
+        transform:translateY(0);
+    }
 }
-img {
-    -webkit-user-drag: none;
-    user-drag: none;
+
+/* Extra-small phones: reduce only the most space-hungry elements. */
+@media (max-width: 380px){
+    .content{padding-left:10px;padding-right:10px}
+    .hero{padding:15px}
+    .hero h1{font-size:18px}
+    .case-image{height:92px}
+    .nft-img{height:104px}
+    .catalog-nft-img{height:118px}
+    .roulette-window{height:108px}
+    .roulette-track{height:96px}
+    .roulette-item{flex-basis:80px;height:94px}
+    .roulette-item img{height:59px}
+    .drop-list{gap:5px}
+    .drop-card{padding:6px}
+    .drop-card-img{height:50px}
 }
-button, a, .case, .nft-card, .item-card {
-    -webkit-tap-highlight-color: transparent;
+
+/* Phones in landscape: don't waste vertical space. */
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px){
+    .header{height:52px;min-height:52px}
+    .content{padding-top:9px}
+    .hero{padding:14px}
+    .hero p{display:none}
+    .hero-btn{margin-top:9px}
+    .case-image{height:88px}
+    .case-big{width:125px;height:125px;margin-bottom:8px}
+    .case-open{padding:10px}
+    .nav button{min-height:50px;padding-top:5px}
 }
+
 
 
 /* =========================================================
-   MOBILE / TELEGRAM MINI APP OPTIMIZATION
-   Полировка под iPhone / Android / Telegram WebApp
+   TOKENLUX — MOBILE UI V2
+   Desktop styles are NOT changed.
+   On phones:
+   1) OPEN button is moved above the possible drops.
+   2) Drops are shown as one horizontal row.
+   3) Case opening block is compact and centered.
+   4) No horizontal page overflow.
    ========================================================= */
-:root{
-    --safe-top:env(safe-area-inset-top,0px);
-    --safe-right:env(safe-area-inset-right,0px);
-    --safe-bottom:env(safe-area-inset-bottom,0px);
-    --safe-left:env(safe-area-inset-left,0px);
-}
-html{
-    width:100%; min-height:100%; background:var(--bg);
-    -webkit-text-size-adjust:100%; text-size-adjust:100%;
-    overscroll-behavior-y:none;
-}
-body{
-    width:100%; min-width:0; min-height:100dvh;
-    -webkit-tap-highlight-color:transparent;
-    overscroll-behavior-y:none;
-}
-button,.case,.filter,.profile-menu-btn{
-    -webkit-tap-highlight-color:transparent;
-    touch-action:manipulation;
-}
-button{font-family:inherit}
-.app{
-    width:100%; max-width:1100px; min-width:0;
-    padding-bottom:calc(84px + var(--safe-bottom));
-}
-.header{
-    height:calc(62px + var(--safe-top)); min-height:62px;
-    padding:var(--safe-top) max(14px,var(--safe-right)) 0 max(14px,var(--safe-left));
-}
-.header .brand{min-width:0}
-.brand-name,.brand-sub{white-space:nowrap}
-.balance{flex:none}
-.balance-box{
-    min-width:0; max-width:43vw; overflow:hidden;
-    text-overflow:ellipsis; white-space:nowrap;
-    padding:8px 10px; font-size:13px;
-}
-.add{width:38px;height:38px;flex:none}
-.content{
-    width:100%; min-width:0;
-    padding:14px max(14px,var(--safe-right)) 18px max(14px,var(--safe-left));
-}
-.page{width:100%;min-width:0}
-.hero{min-height:0;padding:20px;border-radius:20px}
-.hero:after{right:12px;top:4px;font-size:82px}
-.hero h1{
-    font-size:clamp(22px,7vw,29px); max-width:100%;
-    overflow-wrap:anywhere;
-}
-.hero p{max-width:100%;font-size:13px}
-.hero-btn,.open-btn{min-height:48px;touch-action:manipulation}
-.section-head{margin-top:24px}
-.section-head h2{font-size:16px}
-.cases{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.case{
-    min-width:0;padding:9px;border-radius:16px;
-    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
-}
-.case-image{
-    width:100%;height:auto;aspect-ratio:1/.88;min-height:0;
-    border-radius:12px;font-size:clamp(42px,14vw,58px);
-}
-.case-name{font-size:13px;line-height:1.25;overflow-wrap:anywhere}
-.case-info{gap:6px;flex-wrap:wrap;font-size:10px}
-.case-open{margin-top:14px;padding:18px 14px;border-radius:18px}
-.case-big{width:min(190px,62vw);height:min(190px,62vw);margin:4px auto 16px}
-.case-open h2{font-size:18px;line-height:1.3}
-.case-open p{font-size:12px}
-.roulette-wrap{width:100%;margin:16px auto 12px}
-.roulette-window{height:132px;border-radius:15px}
-.roulette-window:before,.roulette-window:after{width:62px}
-.roulette-track{top:6px;height:120px;gap:7px}
-.roulette-item{flex-basis:94px;height:118px;padding:6px;border-radius:11px}
-.roulette-item img{height:76px;border-radius:7px}
-.roulette-item-name{margin-top:5px;font-size:8px}
-.roulette-item-rarity{margin-top:2px;font-size:6px}
-.roulette-status{min-height:36px;padding:4px 18px 0;font-size:10px;line-height:1.35}
-.drop-info{margin:14px auto 4px;padding:14px;border-radius:15px}
-.drop-info-head{align-items:center;margin-bottom:10px}
-.drop-info-head h3{font-size:14px}
-.drop-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.drop-card{min-width:0;padding:8px}
-.drop-card-img{height:auto;aspect-ratio:1/.86;margin-bottom:6px}
-.drop-card-name{font-size:10px}
-.drop-card-rarity{font-size:8px}
-.drop-card-chance{top:6px;right:6px;padding:3px 5px;font-size:8px}
-.open-btn{max-width:none;font-size:14px}
-.inventory-top{
-    width:100%;overflow-x:auto;scrollbar-width:none;
-    padding-bottom:2px;margin-bottom:12px;
-}
-.inventory-top::-webkit-scrollbar{display:none}
-.filter{flex:0 0 auto;min-height:40px;padding:9px 12px;font-size:11px}
-.inventory{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.nft{min-width:0;padding:8px;border-radius:14px}
-.nft-img{height:auto;aspect-ratio:1/1;border-radius:10px;font-size:46px}
-.nft-name{font-size:11px;line-height:1.25;overflow-wrap:anywhere}
-.nft-price{font-size:10px}
-.rarity{top:12px;left:12px;padding:3px 5px;font-size:7px}
-.profile{padding-top:2px}
-.avatar{width:72px;height:72px;margin:8px auto}
-.profile h2{font-size:20px}
-.title-row{margin-top:7px}
-.stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:18px}
-.stat{min-width:0;padding:14px 8px;border-radius:14px}
-.stat strong{font-size:clamp(15px,5vw,21px);overflow:hidden;text-overflow:ellipsis}
-.stat span{display:block;font-size:9px;line-height:1.25}
-.profile-catalog-block{margin-top:18px}
-.profile-menu-btn{min-height:64px;padding:12px;border-radius:14px}
-.profile-menu-icon{width:38px;height:38px;border-radius:10px;font-size:19px}
-.profile-menu-text strong{font-size:12px}
-.profile-menu-text small{font-size:9px;line-height:1.3}
-.profile-menu-arrow{font-size:25px}
-.nft-catalog-panel{padding:12px;border-radius:14px}
-.nft-catalog-top{margin:-2px 1px 12px}
-.nft-catalog-sub{font-size:11px}
-.nft-catalog-hint{font-size:10px}
-.nft-catalog,.nft-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
-.catalog-nft{min-width:0;padding:8px;border-radius:14px}
-.catalog-nft-img{height:auto;aspect-ratio:1/1;min-height:0;border-radius:10px}
-.catalog-nft-name{margin-top:8px;font-size:11px}
-.catalog-nft-price{margin-top:4px;font-size:10px}
-.catalog-nft-meta,.catalog-nft-case{font-size:8px}
-.rarity-category{min-width:0}
-.rarity-category-title{gap:7px;margin-bottom:9px}
-.rarity-title-badge{min-width:0;padding:7px 9px;border-radius:8px;font-size:10px;letter-spacing:1px}
-.rarity-category-count{font-size:9px}
-.nav{padding-bottom:var(--safe-bottom);background:rgba(10,10,16,.94)}
-.nav-inner{width:100%;max-width:700px}
-.nav button{min-height:56px;padding:8px 4px 7px;font-size:9px}
-.nav button div{font-size:19px;margin-bottom:3px}
-.nav button.active::before{top:0;width:24px}
-.toast{
-    left:50%;width:max-content;max-width:calc(100vw - 28px);
-    bottom:calc(72px + var(--safe-bottom));padding:10px 14px;
-    font-size:12px;text-align:center;
-}
-.titles-modal.open{align-items:flex-end;padding:0}
-.titles-modal-card{
-    width:100%;max-width:none;max-height:88dvh;
-    border-radius:20px 20px 0 0;
-    padding:16px max(16px,var(--safe-right)) calc(16px + var(--safe-bottom)) max(16px,var(--safe-left));
-}
-.titles-modal-head h2{font-size:18px}
-.title-item{min-height:54px;padding:10px 11px}
 
-@media(max-width:360px){
-    .header{padding-left:10px;padding-right:10px}
-    .content{padding-left:10px;padding-right:10px}
-    .brand{gap:8px}
-    .brand-name{font-size:13px}
-    .brand-sub{font-size:8px}
-    .logo{width:36px;height:36px;border-radius:10px}
-    .balance{gap:5px}
-    .balance-box{max-width:36vw;font-size:11px;padding:7px 8px}
-    .add{width:34px;height:34px}
-    .hero{padding:16px}
-    .hero h1{font-size:21px}
-    .cases,.inventory,.nft-catalog,.nft-category-grid{gap:7px}
-    .case{padding:7px}
-    .case-name{font-size:11px}
-    .stats{gap:6px}
-    .stat{padding:12px 5px}
-    .stat span{font-size:8px}
+@media (max-width:600px){
+
+    html{
+        -webkit-text-size-adjust:100%;
+    }
+
+    body{
+        min-height:100dvh;
+        overflow-x:hidden;
+        -webkit-tap-highlight-color:transparent;
+    }
+
+    .app{
+        width:100%;
+        max-width:none;
+        padding-bottom:88px;
+    }
+
+    /* ---------- HEADER ---------- */
+
+    .header{
+        height:58px;
+        padding:0 10px;
+        gap:8px;
+    }
+
+    .brand{
+        min-width:0;
+        gap:8px;
+    }
+
+    .logo{
+        width:34px;
+        height:34px;
+        min-width:34px;
+        border-radius:10px;
+        font-size:17px;
+    }
+
+    .brand-name{
+        font-size:14px;
+        line-height:1;
+    }
+
+    .brand-sub{
+        display:none;
+    }
+
+    .balance{
+        min-width:0;
+        gap:6px;
+    }
+
+    .balance-box{
+        min-width:0;
+        max-width:118px;
+        padding:8px 10px;
+        border-radius:11px;
+        font-size:12px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .add{
+        width:34px;
+        height:34px;
+        border-radius:10px;
+        font-size:18px;
+        flex:none;
+    }
+
+    /* ---------- CONTENT ---------- */
+
+    .content{
+        padding:10px;
+    }
+
+    /* ---------- CASE OPEN SCREEN ---------- */
+
+    .case-open{
+        display:flex;
+        flex-direction:column;
+        margin-top:8px;
+        padding:14px 10px 16px;
+        border-radius:18px;
+        overflow:hidden;
+    }
+
+    .case-open .case-big{
+        order:1;
+        width:min(44vw,158px);
+        height:min(44vw,158px);
+        min-width:120px;
+        min-height:120px;
+        margin:2px auto 12px;
+        border-radius:20px;
+        box-shadow:0 0 42px rgba(255,255,255,.07);
+    }
+
+    .case-open h2{
+        order:2;
+        margin:0;
+        font-size:17px;
+        line-height:1.25;
+    }
+
+    .case-open > p:not(#openResult){
+        order:3;
+        margin:5px 4px 8px;
+        font-size:11px;
+        line-height:1.35;
+    }
+
+    /* Рулетка сразу под описанием */
+    .case-open .roulette-wrap{
+        order:4;
+        width:100%;
+        margin:4px 0 6px;
+    }
+
+    .roulette-title{
+        margin-bottom:6px;
+        font-size:9px;
+        letter-spacing:1.1px;
+    }
+
+    .roulette-window{
+        height:112px;
+        border-radius:14px;
+    }
+
+    .roulette-window:before,
+    .roulette-window:after{
+        width:58px;
+    }
+
+    .roulette-track{
+        top:6px;
+        height:100px;
+        gap:6px;
+    }
+
+    .roulette-item{
+        flex-basis:88px;
+        height:98px;
+        padding:5px;
+        border-radius:10px;
+    }
+
+    .roulette-item img{
+        height:62px;
+        border-radius:6px;
+    }
+
+    .roulette-item-name{
+        margin-top:4px;
+        font-size:7.5px;
+    }
+
+    .roulette-item-rarity{
+        margin-top:2px;
+        font-size:6px;
+    }
+
+    .roulette-pointer{
+        width:2px;
+    }
+
+    .roulette-pointer:before{
+        border-left-width:7px;
+        border-right-width:7px;
+        border-bottom-width:11px;
+    }
+
+    .roulette-status{
+        min-height:22px;
+        font-size:9px;
+        line-height:1.25;
+    }
+
+    /* ГЛАВНОЕ: кнопка открытия выше блока подарков */
+    .case-open .open-btn{
+        order:5;
+        width:100%;
+        max-width:none;
+        height:48px;
+        min-height:48px;
+        margin:4px 0 8px;
+        border-radius:12px;
+        font-size:14px;
+        box-shadow:0 8px 22px rgba(245,211,79,.20);
+    }
+
+    .case-open #openResult{
+        order:6;
+        margin:0 4px 8px;
+        font-size:10px;
+        line-height:1.3;
+    }
+
+    /* ---------- POSSIBLE DROPS ---------- */
+
+    .case-open .drop-info{
+        order:7;
+        width:100%;
+        max-width:none;
+        margin:8px 0 0;
+        padding:11px 0 3px;
+        border:0;
+        border-top:1px solid rgba(245,211,79,.13);
+        border-radius:0;
+        background:none;
+        text-align:left;
+    }
+
+    .drop-info-head{
+        margin:0 4px 9px;
+        align-items:center;
+    }
+
+    .drop-info-head h3{
+        font-family:Inter,sans-serif;
+        font-size:13px;
+        font-weight:800;
+    }
+
+    .drop-info-count{
+        font-size:9px;
+        white-space:nowrap;
+    }
+
+    /*
+      Один горизонтальный ряд.
+      На экране видно несколько подарков, остальные листаются
+      пальцем вправо. Никакой длинной вертикальной колонки.
+    */
+    .drop-list{
+        display:flex;
+        flex-wrap:nowrap;
+        gap:8px;
+        width:100%;
+        overflow-x:auto;
+        overflow-y:hidden;
+        padding:1px 4px 7px;
+        scroll-snap-type:x proximity;
+        scrollbar-width:none;
+        -webkit-overflow-scrolling:touch;
+    }
+
+    .drop-list::-webkit-scrollbar{
+        display:none;
+    }
+
+    .drop-card{
+        flex:0 0 118px;
+        width:118px;
+        min-width:118px;
+        height:118px;
+        padding:7px;
+        border-radius:12px;
+        scroll-snap-align:start;
+    }
+
+    .drop-card-img{
+        height:70px;
+        margin-bottom:6px;
+        border-radius:8px;
+    }
+
+    .drop-card-name{
+        font-size:10px;
+        line-height:1.15;
+    }
+
+    .drop-card-rarity{
+        margin-top:3px;
+        font-size:8px;
+    }
+
+    .drop-card-chance{
+        top:6px;
+        right:6px;
+        padding:2px 5px;
+        border-radius:6px;
+        font-size:8px;
+    }
+
+    /* ---------- OTHER MOBILE PAGES ---------- */
+
+    .hero{
+        min-height:0;
+        padding:18px;
+        border-radius:18px;
+    }
+
+    .hero h1{
+        font-size:20px;
+    }
+
+    .hero p{
+        font-size:12px;
+        line-height:1.4;
+    }
+
+    .cases{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+    }
+
+    .case{
+        padding:8px;
+        border-radius:14px;
+    }
+
+    .case-image{
+        height:105px;
+        border-radius:10px;
+    }
+
+    .case-name{
+        margin-top:8px;
+        font-size:11px;
+    }
+
+    .case-info{
+        margin-top:5px;
+        font-size:9px;
+    }
+
+    .inventory{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+    }
+
+    .nft{
+        padding:8px;
+        border-radius:13px;
+    }
+
+    .nft-img{
+        height:110px;
+        border-radius:9px;
+    }
+
+    .nft-name{
+        margin-top:7px;
+        font-size:10px;
+    }
+
+    .nft-price{
+        font-size:9px;
+    }
+
+    .sell-nft-btn{
+        min-height:30px;
+        margin-top:7px;
+        font-size:8px;
+    }
+
+    .stats{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+        margin-top:18px;
+    }
+
+    .stat{
+        padding:14px 10px;
+        border-radius:13px;
+    }
+
+    .stat strong{
+        font-size:17px;
+    }
+
+    .stat span{
+        font-size:9px;
+    }
+
+    .avatar{
+        width:68px;
+        height:68px;
+        font-size:29px;
+    }
+
+    .profile h2{
+        font-size:18px;
+    }
+
+    .nft-category-grid,
+    .nft-catalog{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+    }
+
+    .catalog-nft{
+        padding:7px;
+        border-radius:13px;
+    }
+
+    .catalog-nft-img{
+        height:125px;
+        border-radius:10px;
+    }
+
+    .catalog-nft-name{
+        margin-top:8px;
+        font-size:10px;
+    }
+
+    .catalog-nft-price{
+        font-size:10px;
+    }
+
+    .catalog-nft-meta{
+        font-size:8px;
+    }
+
+    .profile-menu-btn{
+        padding:12px;
+        border-radius:13px;
+    }
+
+    .profile-menu-icon{
+        width:36px;
+        height:36px;
+        font-size:19px;
+    }
+
+    .profile-menu-text strong{
+        font-size:12px;
+    }
+
+    .profile-menu-text small{
+        font-size:9px;
+    }
+
+    .nav{
+        padding-bottom:env(safe-area-inset-bottom);
+    }
+
+    .nav button{
+        padding:9px 4px 8px;
+        font-size:9px;
+    }
+
+    .nav button div{
+        font-size:18px;
+        margin-bottom:2px;
+    }
+
+    .toast{
+        bottom:calc(72px + env(safe-area-inset-bottom));
+        max-width:calc(100vw - 24px);
+        font-size:11px;
+        padding:10px 13px;
+    }
+
+    .titles-modal.open{
+        padding:10px;
+    }
+
+    .titles-modal-card{
+        max-height:84dvh;
+        padding:14px;
+        border-radius:16px;
+    }
 }
-@media(hover:none),(pointer:coarse){
-    .case:hover,.catalog-nft:hover,.stat:hover,.profile-menu-btn:hover,
-    .open-btn:hover:not(:disabled),.hero-btn:hover{transform:none}
-    .case:active,.profile-menu-btn:active,.filter:active,
-    .open-btn:active:not(:disabled),.hero-btn:active{transform:scale(.985)}
-    .cases .case:nth-child(5):hover{border-color:var(--line);box-shadow:none}
-    .cases .case:nth-child(5):hover::before,
-    .cases .case:nth-child(5):hover::after{opacity:0}
-    .cases .case:nth-child(5):hover .case-image img{animation:none}
+
+/* Очень маленькие телефоны */
+@media (max-width:380px){
+    .header{
+        padding:0 8px;
+    }
+
+    .brand-name{
+        font-size:13px;
+    }
+
+    .balance-box{
+        max-width:105px;
+        padding:7px 8px;
+        font-size:11px;
+    }
+
+    .case-open{
+        padding-left:8px;
+        padding-right:8px;
+    }
+
+    .case-open .case-big{
+        width:130px;
+        height:130px;
+        min-width:130px;
+        min-height:130px;
+    }
+
+    .roulette-window{
+        height:104px;
+    }
+
+    .roulette-track{
+        height:92px;
+    }
+
+    .roulette-item{
+        flex-basis:80px;
+        height:90px;
+    }
+
+    .roulette-item img{
+        height:56px;
+    }
+
+    .drop-card{
+        flex-basis:108px;
+        width:108px;
+        min-width:108px;
+        height:110px;
+    }
+
+    .drop-card-img{
+        height:63px;
+    }
 }
-@media(max-width:700px) and (prefers-reduced-motion:reduce){
-    .hero-btn::after,.logo span,.hero:after,.case-big.reveal,
-    .case-big.epic-reveal,.open-btn.is-opening::after{animation:none!important}
+
+/* Телефон в альбомной ориентации */
+@media (max-width:900px) and (orientation:landscape) and (max-height:520px){
+    .app{
+        padding-bottom:72px;
+    }
+
+    .case-open .case-big{
+        width:100px;
+        height:100px;
+        min-width:100px;
+        min-height:100px;
+        margin-bottom:7px;
+    }
+
+    .case-open{
+        padding-top:9px;
+        padding-bottom:10px;
+    }
+
+    .roulette-window{
+        height:96px;
+    }
+
+    .roulette-track{
+        height:84px;
+    }
+
+    .roulette-item{
+        height:82px;
+        flex-basis:76px;
+    }
+
+    .roulette-item img{
+        height:49px;
+    }
+
+    .case-open .open-btn{
+        height:42px;
+        min-height:42px;
+    }
+
+    .drop-card{
+        height:100px;
+        flex-basis:100px;
+        width:100px;
+        min-width:100px;
+    }
+
+    .drop-card-img{
+        height:57px;
+    }
 }
-@supports(height:100dvh){
-    .app{min-height:100dvh}
+
+
+
+/* =========================================================
+   FINAL MOBILE FIX
+   На телефоне кнопка открытия должна быть ПЕРЕД
+   блоком "Что можно получить".
+   ПК не затрагивается.
+   ========================================================= */
+@media (max-width:600px){
+
+    .case-open{
+        display:flex !important;
+        flex-direction:column !important;
+    }
+
+    .case-open > .case-big{
+        order:10 !important;
+    }
+
+    .case-open > h2{
+        order:20 !important;
+    }
+
+    .case-open > p:not(#openResult){
+        order:30 !important;
+    }
+
+    .case-open > .roulette-wrap{
+        order:40 !important;
+    }
+
+    /* КНОПКА — сразу после рулетки */
+    .case-open > .open-btn{
+        order:50 !important;
+        display:block !important;
+        width:100% !important;
+        margin:8px 0 10px !important;
+    }
+
+    .case-open > #openResult{
+        order:60 !important;
+    }
+
+    /* ПОДАРКИ — строго после кнопки */
+    .case-open > .drop-info{
+        order:70 !important;
+    }
+
+    /* Подарки в одну горизонтальную ленту */
+    .case-open > .drop-info .drop-list{
+        display:flex !important;
+        flex-direction:row !important;
+        flex-wrap:nowrap !important;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
+        width:100% !important;
+        gap:8px !important;
+        padding:2px 4px 8px !important;
+        scrollbar-width:none !important;
+        -webkit-overflow-scrolling:touch !important;
+    }
+
+    .case-open > .drop-info .drop-list::-webkit-scrollbar{
+        display:none !important;
+    }
+
+    .case-open > .drop-info .drop-card{
+        flex:0 0 118px !important;
+        width:118px !important;
+        min-width:118px !important;
+        height:118px !important;
+    }
+}
+
+@media (max-width:380px){
+    .case-open > .drop-info .drop-card{
+        flex-basis:108px !important;
+        width:108px !important;
+        min-width:108px !important;
+    }
+}
+
+
+
+/* ===== MOBILE NAV — ровные Главная / Профиль ===== */
+@media (max-width:600px){
+    .nav-inner{
+        width:100% !important;
+        max-width:520px !important;
+        grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    }
+
+    .nav button{
+        width:100%;
+        min-width:0;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+    }
+}
+
+
+
+/* =========================================================
+   TELEGRAM / MOBILE ROBUSTNESS
+   Только мобильные экраны. Десктопный интерфейс не меняется.
+   ========================================================= */
+@media (max-width:600px){
+
+    html, body{
+        width:100%;
+        max-width:100%;
+        overflow-x:hidden;
+    }
+
+    body{
+        min-width:0;
+        padding-left:0;
+        padding-right:0;
+    }
+
+    .app{
+        width:100%;
+        max-width:100%;
+        min-width:0;
+        overflow-x:clip;
+    }
+
+    .header{
+        width:100%;
+        max-width:100%;
+        box-sizing:border-box;
+    }
+
+    /* Нижняя панель: Главная и Профиль строго 50/50. */
+    .nav{
+        width:100%;
+        left:0;
+        right:0;
+        bottom:0;
+        z-index:1000;
+        padding-left:0;
+        padding-right:0;
+        box-sizing:border-box;
+    }
+
+    .nav-inner{
+        width:100% !important;
+        max-width:none !important;
+        min-width:0;
+        grid-template-columns:1fr 1fr !important;
+    }
+
+    .nav button{
+        width:100% !important;
+        min-width:0 !important;
+        margin:0 !important;
+        box-sizing:border-box;
+        display:flex !important;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        text-align:center;
+    }
+
+    .nav button div{
+        line-height:1;
+    }
+}
+
+
+/* Performance: keep decorative effects lightweight on phones */
+@media (max-width: 600px) {
+    .ambient-glow,
+    body::before {
+        display: none !important;
+    }
+    .glass,
+    .modal,
+    .card,
+    .case-card {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
 }
 
 </style>
@@ -2185,7 +3337,7 @@ button{font-family:inherit}
             </div>
 
             <div class="case-info">
-                <span>4 предмета</span>
+                <span>8 предметов</span>
                 <span class="price">⭐ 100</span>
             </div>
         </div>
@@ -2282,7 +3434,7 @@ button{font-family:inherit}
         </p>
 
         <div class="roulette-wrap">
-            <div class="roulette-title">✦ РУЛЕТКА ВЫПАДЕНИЯ</div>
+            <div class="roulette-title">✦ РУЛЕТКА</div>
             <div class="roulette-window" id="rouletteWindow">
                 <div class="roulette-pointer"></div>
                 <div class="roulette-track" id="rouletteTrack"></div>
@@ -2323,6 +3475,18 @@ button{font-family:inherit}
 
 
 
+<!-- TOP -->
+<section id="top" class="page">
+    <div class="section-head"><h2>🏆 Топ</h2><span>Рейтинг игроков</span></div>
+    <div class="top-tabs">
+        <button class="top-tab active" type="button" onclick="switchTopTab('stars',this)">⭐ По звёздам</button>
+        <button class="top-tab" type="button" onclick="switchTopTab('spent',this)">💎 По тратам</button>
+    </div>
+    <div class="top-hero"><h1 id="topTitle">Самые звёздные игроки</h1><p id="topSubtitle">Здесь отображаются пользователи с наибольшим количеством ⭐. Первые три места получают особое оформление.</p></div>
+    <div id="topList" class="top-list"><div class="top-empty">Загружаем рейтинг…</div></div>
+    <button class="top-refresh" type="button" onclick="loadLeaderboard(true)">↻ Обновить рейтинг</button>
+</section>
+
 <!-- PROFILE -->
 
 <section id="profile" class="page">
@@ -2334,7 +3498,7 @@ button{font-family:inherit}
             <img id="profileAvatarImage" alt="Аватар пользователя" style="display:none">
         </div>
 
-        <h2>Игрок</h2>
+        <h2 id="profileName">Игрок</h2>
 
         <div class="title-row">
             <span id="profileTitle" class="player-title newcomer">Новичок</span>
@@ -2442,17 +3606,15 @@ button{font-family:inherit}
 
     <div class="nav-inner">
 
-        <button
-            class="active"
-            onclick="showPage('home',this)"
-        >
+        <button class="active" onclick="showPage('home',this)">
             <div>⌂</div>
             Главная
         </button>
-
-        <button
-            onclick="showPage('profile',this)"
-        >
+        <button onclick="showPage('top',this); loadLeaderboard()">
+            <div>🏆</div>
+            Топ
+        </button>
+        <button onclick="showPage('profile',this)">
             <div>👤</div>
             Профиль
         </button>
@@ -2502,49 +3664,49 @@ const caseDrops = {
     "Кровавая ночь": [
         {
             name: "Succubus",
-            image: "nft/Succubus.png",
+            image: "nft/Succubus.webp",
             rarity: "Common",
             chance: 70
         },
         {
             name: "Crimson Veil",
-            image: "nft/Crimson Veil.png",
+            image: "nft/Crimson Veil.webp",
             rarity: "Common",
             chance: 70
         },
         {
             name: "Dracula",
-            image: "nft/Dracula.png",
+            image: "nft/Dracula.webp",
             rarity: "RARE",
             chance: 20
         },
         {
             name: "Joker",
-            image: "nft/Joker.png",
+            image: "nft/Joker.webp",
             rarity: "RARE",
             chance: 20
         },
         {
             name: "Barbed",
-            image: "nft/Barbed.png",
+            image: "nft/Barbed.webp",
             rarity: "EPIC",
             chance: 9
         },
         {
             name: "Snake Ruby",
-            image: "nft/Snake Ruby.png",
+            image: "nft/Snake Ruby.webp",
             rarity: "EPIC",
             chance: 9
         },
         {
             name: "Impeached",
-            image: "nft/PeachRed.png",
+            image: "nft/PeachRed.webp",
             rarity: "LEGENDARY",
             chance: 1
         },
         {
             name: "Chicago Bulls",
-            image: "nft/Chicago Bulls.png",
+            image: "nft/Chicago Bulls.webp",
             rarity: "LEGENDARY",
             chance: 1
         }
@@ -2553,49 +3715,49 @@ const caseDrops = {
     "Записка смерти": [
         {
             name: "L doog",
-            image: "nft/L doog.png",
+            image: "nft/L doog.webp",
             rarity: "COMMON",
             chance: 70
         },
          {
             name: "Incubus",
-            image: "nft/Incubus.png",
+            image: "nft/Incubus.webp",
             rarity: "COMMON",
             chance: 70
         },
          {
             name: "Wanna Play",
-            image: "nft/Wanna Play.png",
+            image: "nft/Wanna Play.webp",
             rarity: "COMMON",
             chance: 70
         },
         {
             name: "Missionary",
-            image: "nft/Missionary.png",
+            image: "nft/Missionary.webp",
             rarity: "RARE",
             chance: 20
         },
         {
             name: "Redo 999",
-            image: "nft/DeathRedo.png",
+            image: "nft/DeathRedo.webp",
             rarity: "EPIC",
             chance: 9
         },
         {
             name: "Monstrous",
-            image: "nft/Monstrous.png",
+            image: "nft/Monstrous.webp",
             rarity: "EPIC",
             chance: 9
         },
         {
             name: "Death Note",
-            image: "nft/Death Note.png",
+            image: "nft/Death Note.webp",
             rarity: "LEGENDARY",
             chance: 1
         },
         {
             name: "Dark Soul",
-            image: "nft/Dark Soul.png",
+            image: "nft/Dark Soul.webp",
             rarity: "LEGENDARY",
             chance: 1
         }
@@ -2604,31 +3766,31 @@ const caseDrops = {
     "Дуров": [
         {
             name: "Foundation",
-            image: "nft/Foundation.png",
+            image: "nft/Foundation.webp",
             rarity: "COMMON",
             chance: 70
         },
                 {
             name: "The Founder",
-            image: "nft/The Founder.png",
+            image: "nft/The Founder.webp",
             rarity: "COMMON",
             chance: 70
         },
         {
             name: "Durovs Coat",
-            image: "nft/Durovs Coat.png",
+            image: "nft/Durovs Coat.webp",
             rarity: "RARE",
             chance: 20
         },
         {
             name: "Durovs Figurine",
-            image: "nft/Durovs Figurine.png",
+            image: "nft/Durovs Figurine.webp",
             rarity: "LEGENDARY",
             chance: 1
         },
         {
             name: "DurovGlasses",
-            image: "nft/DurovGlasses.png",
+            image: "nft/DurovGlasses.webp",
             rarity: "Epic",
             chance: 9
         }
@@ -2637,25 +3799,25 @@ const caseDrops = {
     "Lux": [
         {
             name: "Contour",
-            image: "nft/Contour.png",
+            image: "nft/Contour.webp",
             rarity: "COMMON",
             chance: 70
         },
         {
             name: "Zap Core",
-            image: "nft/Zap Core.png",
+            image: "nft/Zap Core.webp",
             rarity: "RARE",
             chance: 20
         },
         {
             name: "Golden Elixir",
-            image: "nft/Golden Elixir.png",
+            image: "nft/Golden Elixir.webp",
             rarity: "EPIC",
             chance: 9
         },
         {
             name: "Gucci Leap",
-            image: "nft/Gucci Leap.png",
+            image: "nft/Gucci Leap.webp",
             rarity: "LEGENDARY",
             chance: 1
         }
@@ -2664,38 +3826,38 @@ const caseDrops = {
     "Dota Case": [
         {
             name: "Aegis",
-            image: "nft/Aegis.png",
+            image: "nft/Aegis.webp",
             rarity: "COMMON",
             chance: 70
         },
         {
             name: "Roshan",
-            image: "nft/Roshan.png",
+            image: "nft/Roshan.webp",
             rarity: "EPIC",
             chance: 9
         },
         {
             name: "Shadow Fiend",
-            image: "nft/Shadow Fiend.png",
+            image: "nft/Shadow Fiend.webp",
             rarity: "LEGENDARY",
             chance: 1
         },
                 {
             name: "Marci",
-            image: "nft/Marci.png",
+            image: "nft/Marci.webp",
             rarity: "???",
             chance: 0.1
         }
     ],
 
     "Бесплатный кейс": [
-        { name: "santahat", image: "nft/santahat.png", rarity: "COMMON", chance: 70 },
-        { name: "mask", image: "nft/mask.png", rarity: "COMMON", chance: 70 },
-        { name: "spiced wine", image: "nft/spicedwine.png", rarity: "COMMON", chance: 70 },
-        { name: "cigar", image: "nft/cigar.png", rarity: "COMMON", chance: 70 },
-        { name: "1 may", image: "nft/1may.png", rarity: "RARE", chance: 20 },
-        { name: "Diamond Ring", image: "nft/diamondring.png", rarity: "EPIC", chance: 9 },
-        { name: "shard", image: "nft/shard.png", rarity: "LEGENDARY", chance: 1 }
+        { name: "santahat", image: "nft/santahat.webp", rarity: "COMMON", chance: 70 },
+        { name: "mask", image: "nft/mask.webp", rarity: "COMMON", chance: 70 },
+        { name: "spiced wine", image: "nft/spicedwine.webp", rarity: "COMMON", chance: 70 },
+        { name: "cigar", image: "nft/cigar.webp", rarity: "COMMON", chance: 70 },
+        { name: "1 may", image: "nft/1may.webp", rarity: "RARE", chance: 20 },
+        { name: "Diamond Ring", image: "nft/diamondring.webp", rarity: "EPIC", chance: 9 },
+        { name: "shard", image: "nft/shard.webp", rarity: "LEGENDARY", chance: 1 }
     ]
 
 };
@@ -2714,7 +3876,10 @@ const nftPrices = {
     // === Кровавая ночь (кейс 100) ===
     "Succubus": "30⭐",         // COMMON, 70%
     "Crimson Veil": "30⭐",     // COMMON, 70%
+    "Dracula": "100⭐",         // RARE, 20%
+    "Joker": "100⭐",           // RARE, 20%
     "Barbed": "300⭐",          // EPIC, 9%
+    "Snake Ruby": "300⭐",      // EPIC, 9%
     "Impeached": "2.000⭐",      // LEG, 1%
 
 
@@ -2799,32 +3964,117 @@ function getNFTSellPrice(nft){
     return parseStarPrice(nftPrices[nft.name]);
 }
 
-function saveGame(){
-    try{
-        localStorage.setItem("tokenlux_balance", String(balance));
-        localStorage.setItem("tokenlux_inventory", JSON.stringify(inventory));
-        localStorage.setItem("tokenlux_spins", String(totalSpins));
-        localStorage.setItem("tokenlux_spent_stars", String(totalSpentStars));
-    }catch(e){}
+// --- НОВЫЕ ФУНКЦИИ ДЛЯ РАБОТЫ С ОБЛАКОМ (WORKER + KV) ---
+
+// Функция для получения ID пользователя (из Telegram или гостевой)
+function getUserId() {
+    try {
+        // Пытаемся получить ID из Telegram
+        const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        if (tg?.id) return String(tg.id);
+    } catch(e) {}
+    
+    // Если не в Telegram — используем гостевой ID (но сохраняем его в localStorage)
+    let id = localStorage.getItem('tokenlux_guest_id');
+    if (!id) {
+        id = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+        localStorage.setItem('tokenlux_guest_id', id);
+    }
+    return id;
 }
 
-function loadGame(){
-    try{
-        const b = localStorage.getItem("tokenlux_balance");
-        const inv = localStorage.getItem("tokenlux_inventory");
-        const spins = localStorage.getItem("tokenlux_spins");
-        const spent = localStorage.getItem("tokenlux_spent_stars");
-
-        if(b !== null && Number.isFinite(Number(b))) balance = Number(b);
-        if(inv){
-            const parsed = JSON.parse(inv);
-            if(Array.isArray(parsed)) inventory = parsed;
+// СОХРАНЕНИЕ (в облако + резерв в localStorage)
+// СОХРАНЕНИЕ (в облако + резерв в localStorage)
+async function saveGame() {
+    const userId = getUserId();
+    
+    // Получаем имя и аватарку из Telegram
+    let userName = 'Игрок';
+    let userAvatar = '';
+    let userUsername = '';
+    try {
+        const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+        if (tg) {
+            userName = tg.first_name || 'Игрок';
+            userUsername = tg.username || '';
+            userAvatar = tg.photo_url || '';
         }
-        if(spins !== null && Number.isFinite(Number(spins))) totalSpins = Number(spins);
-        if(spent !== null && Number.isFinite(Number(spent))) totalSpentStars = Number(spent);
-    }catch(e){}
+    } catch(e) {}
+    
+    const data = {
+        balance: balance,
+        inventory: inventory,
+        totalSpins: totalSpins,
+        totalSpentStars: totalSpentStars,
+        userName: userName,      // <--- ИМЯ
+        username: userUsername,  // <--- ЮЗЕРНЕЙМ
+        avatar: userAvatar       // <--- АВАТАРКА
+    };
+
+    try {
+        const response = await fetch(`https://tokenlux-api.tokenluxservice.workers.dev/saveData?userId=${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Server error');
+        
+        localStorage.setItem('tokenlux_backup', JSON.stringify(data));
+    } catch (e) {
+        localStorage.setItem('tokenlux_backup', JSON.stringify(data));
+        console.log('Saved locally (offline mode)');
+    }
 }
 
+// ЗАГРУЗКА (из облака или из резерва)
+async function loadGame() {
+    const userId = getUserId();
+
+    try {
+        const response = await fetch(`https://tokenlux-api.tokenluxservice.workers.dev/getData?userId=${userId}`);
+        
+        if (!response.ok) throw new Error('Server error');
+        
+        const data = await response.json();
+        
+        balance = data.balance || 100;
+        inventory = data.inventory || [];
+        totalSpins = data.totalSpins || 0;
+        totalSpentStars = data.totalSpentStars || 0;
+
+        localStorage.setItem('tokenlux_backup', JSON.stringify({ balance, inventory, totalSpins, totalSpentStars }));
+        
+        return;
+    } catch (e) {
+        console.log('Loading from backup (offline mode)');
+        loadFromBackup();
+    }
+}
+
+function loadFromBackup() {
+    try {
+        const backup = localStorage.getItem('tokenlux_backup');
+        if (backup) {
+            const data = JSON.parse(backup);
+            balance = data.balance || 100;
+            inventory = data.inventory || [];
+            totalSpins = data.totalSpins || 0;
+            totalSpentStars = data.totalSpentStars || 0;
+        }
+    } catch(e) {}
+}
+/* =========================
+   TOP / LEADERBOARD
+========================= */
+let currentTopTab = "stars";
+let leaderboardCache = null;
+function getTelegramUser(){try{return window.Telegram?.WebApp?.initDataUnsafe?.user||null}catch(e){return null}}
+function switchTopTab(tab,button){currentTopTab=tab;document.querySelectorAll(".top-tab").forEach(b=>b.classList.remove("active"));if(button)button.classList.add("active");const t=document.getElementById("topTitle"),p=document.getElementById("topSubtitle");if(tab==="spent"){t.textContent="Самые щедрые игроки";p.textContent="Рейтинг по общему количеству потраченных ⭐ на открытие кейсов."}else{t.textContent="Самые звёздные игроки";p.textContent="Здесь отображаются пользователи с наибольшим количеством ⭐."}renderLeaderboard()}
+function normalizeLeaderboardItem(item){const tg=item.telegramUser||{};return{id:String(item.id??item.userId??""),name:item.name||item.username||tg.first_name||"Игрок",username:item.username||tg.username||"",avatar:item.avatar||item.photoUrl||tg.photo_url||"",stars:Number(item.stars??item.balance??0)||0,spent:Number(item.spent??item.totalSpentStars??0)||0}}
+async function loadLeaderboard(force=false){const root=document.getElementById("topList");if(!root)return;if(!force&&leaderboardCache){renderLeaderboard();return}root.innerHTML='<div class="top-empty">Загружаем рейтинг…</div>';try{const r=await fetch("https://tokenlux-api.tokenluxservice.workers.dev/leaderboard?limit=50",{cache:"no-store"});if(!r.ok)throw new Error("Leaderboard endpoint unavailable");const data=await r.json();const rows=Array.isArray(data)?data:(data.users||data.leaderboard||[]);leaderboardCache=rows.map(normalizeLeaderboardItem);renderLeaderboard()}catch(e){const tg=getTelegramUser();leaderboardCache=[{id:getUserId(),name:tg?.first_name||"Вы",username:tg?.username||"",avatar:tg?.photo_url||"",stars:balance,spent:totalSpentStars}];renderLeaderboard(true)}}
+function renderLeaderboard(isFallback=false){const root=document.getElementById("topList");if(!root)return;const rows=(leaderboardCache||[]).slice().sort((a,b)=>currentTopTab==="spent"?b.spent-a.spent:b.stars-a.stars).slice(0,50);if(!rows.length){root.innerHTML='<div class="top-empty">Пока нет данных для рейтинга.</div>';return}root.innerHTML=rows.map((u,i)=>{const rank=i+1,value=currentTopTab==="spent"?u.spent:u.stars,medal=rank===1?"👑":rank===2?"🥈":rank===3?"🥉":rank,avatar=u.avatar?`<img src="${escapeHtml(u.avatar)}" alt="" onerror="this.style.display='none'">`:"⭐",handle=u.username?"@"+escapeHtml(u.username):(rank===1&&isFallback?"Ваш профиль":"Игрок");return `<div class="top-user rank-${rank}"><div class="top-rank">${medal}</div><div class="top-avatar">${avatar}</div><div class="top-user-info"><div class="top-user-name">${escapeHtml(u.name)}</div><div class="top-user-sub">${handle}</div></div><div class="top-stars">⭐ ${formatStars(value)}</div></div>`}).join("")}
+function escapeHtml(value){return String(value??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]))}
 
 /* =========================
    NAVIGATION
@@ -2960,27 +4210,53 @@ function getRandomNFT(){
 
 let rouletteAudioContext = null;
 
-function rouletteTick(intensity=1){
+let rouletteLastSoundAt = 0;
+
+function ensureRouletteAudio(){
     try{
         if(!rouletteAudioContext){
             rouletteAudioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
-        if(rouletteAudioContext.state === "suspended") rouletteAudioContext.resume();
+        if(rouletteAudioContext.state === "suspended"){
+            rouletteAudioContext.resume();
+        }
+        return true;
+    }catch(e){
+        return false;
+    }
+}
+
+function rouletteTick(intensity=1){
+    try{
+        if(!ensureRouletteAudio()) return;
+
+        const nowWall = performance.now();
+        /* Не даём звуку превращаться в раздражающий треск на быстрых кадрах. */
+        if(nowWall - rouletteLastSoundAt < 42) return;
+        rouletteLastSoundAt = nowWall;
 
         const now = rouletteAudioContext.currentTime;
         const osc = rouletteAudioContext.createOscillator();
         const gain = rouletteAudioContext.createGain();
 
-        osc.type = "square";
-        osc.frequency.setValueAtTime(760 + Math.random()*80, now);
-        osc.frequency.exponentialRampToValueAtTime(520, now + .045);
+        /* Мягкий "click/chime": вместо резкого square — triangle. */
+        osc.type = "triangle";
 
+        const speedTone = Math.min(1, Math.max(0, intensity - .65));
+        const startFreq = 520 + speedTone * 120;
+        const endFreq = 360 + speedTone * 70;
+
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + .045);
+
+        const volume = Math.min(.014, .0075 + intensity * .003);
         gain.gain.setValueAtTime(.0001, now);
-        gain.gain.exponentialRampToValueAtTime(.035 * intensity, now + .003);
-        gain.gain.exponentialRampToValueAtTime(.0001, now + .055);
+        gain.gain.exponentialRampToValueAtTime(volume, now + .006);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + .052);
 
         osc.connect(gain);
         gain.connect(rouletteAudioContext.destination);
+
         osc.start(now);
         osc.stop(now + .06);
     }catch(e){}
@@ -3006,7 +4282,7 @@ function buildRoulette(){
 
     track.innerHTML = sequence.map(item => `
         <div class="roulette-item">
-            ${item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.1'">` : `<div class="roulette-placeholder">⚔️</div>`}
+            ${item.image ? `<img src="${item.image}" loading="lazy" decoding="async" fetchpriority="low" alt="${item.name}" onerror="this.style.opacity='.1'">` : `<div class="roulette-placeholder">⚔️</div>`}
             <div class="roulette-item-name">${item.name}</div>
             <div class="roulette-item-rarity">${item.rarity}</div>
         </div>
@@ -3017,6 +4293,10 @@ function buildRoulette(){
 }
 
 function openRandomNFT(){
+
+    /* AudioContext запускается непосредственно из клика.
+       Поэтому звук работает и на ПК, и в мобильном Telegram/WebView. */
+    ensureRouletteAudio();
 
     const button = document.getElementById("openButton");
     const result = document.getElementById("openResult");
@@ -3066,7 +4346,7 @@ function openRandomNFT(){
     track.innerHTML = sequence.map(item => `
         <div class="roulette-item">
             ${item.image
-                ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.08'">`
+                ? `<img src="${item.image}" loading="lazy" decoding="async" fetchpriority="low" alt="${item.name}" onerror="this.style.opacity='.08'">`
                 : `<div class="roulette-placeholder">⚔️</div>`}
             <div class="roulette-item-name">${item.name}</div>
             <div class="roulette-item-rarity">${item.rarity}</div>
@@ -3130,9 +4410,46 @@ function openRandomNFT(){
             status.textContent = "✨ ПОБЕДИТЕЛЬ ОПРЕДЕЛЁН!";
 
             setTimeout(()=>{
-                rouletteTick(1.5);
-                setTimeout(()=>rouletteTick(1.15),90);
-                setTimeout(()=>rouletteTick(.9),190);
+                try{
+                    if(!rouletteAudioContext){
+                        rouletteAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if(rouletteAudioContext.state === "suspended"){
+                        rouletteAudioContext.resume();
+                    }
+
+                    const now = rouletteAudioContext.currentTime;
+
+                    [0, 0.11].forEach((delay, index)=>{
+                        const osc = rouletteAudioContext.createOscillator();
+                        const gain = rouletteAudioContext.createGain();
+
+                        osc.type = "sine";
+                        const freq = index === 0 ? 660 : 880;
+
+                        osc.frequency.setValueAtTime(freq, now + delay);
+                        osc.frequency.exponentialRampToValueAtTime(
+                            freq * .985,
+                            now + delay + .22
+                        );
+
+                        gain.gain.setValueAtTime(.0001, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(
+                            index === 0 ? .018 : .014,
+                            now + delay + .012
+                        );
+                        gain.gain.exponentialRampToValueAtTime(
+                            .0001,
+                            now + delay + .26
+                        );
+
+                        osc.connect(gain);
+                        gain.connect(rouletteAudioContext.destination);
+
+                        osc.start(now + delay);
+                        osc.stop(now + delay + .28);
+                    });
+                }catch(e){}
             },30);
 
             totalSpins++;
@@ -3278,7 +4595,7 @@ function renderCatalogNFTCard(item){
         <article class="catalog-nft rarity-${rarity.toLowerCase()}">
             <div class="catalog-nft-img">
                 ${item.image
-                    ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.08'">`
+                    ? `<img src="${item.image}" loading="lazy" decoding="async" fetchpriority="low" alt="${item.name}" onerror="this.style.opacity='.08'">`
                     : `<span class="catalog-nft-placeholder">⚔️</span>`}
             </div>
             <div class="catalog-nft-info">
@@ -3323,7 +4640,7 @@ function updateInventory(){
 
             <div class="nft-img has-image">
                 ${nft.image
-                    ? `<img src="${nft.image}" alt="${nft.name}" onerror="this.style.display='none'">`
+                    ? `<img src="${nft.image}" loading="lazy" decoding="async" fetchpriority="low" alt="${nft.name}" onerror="this.style.display='none'">`
                     : `<span style="font-size:48px">⚔️</span>`}
             </div>
 
@@ -3559,7 +4876,7 @@ function showToast(text){
  *
  * {
  *     name:"Мой NFT",
- *     image:"nft/my-nft.png",
+ *     image:"nft/my-nft.webp",
  *     rarity:"LEGENDARY",
  *     chance:1
  * }
@@ -3599,7 +4916,7 @@ function renderDropList(){
             <div class="drop-card-chance">${item.chance}%</div>
 
             <div class="drop-card-img">
-                ${item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.1'">` : `<div class="roulette-placeholder">⚔️</div>`}
+                ${item.image ? `<img src="${item.image}" loading="lazy" decoding="async" fetchpriority="low" alt="${item.name}" onerror="this.style.opacity='.1'">` : `<div class="roulette-placeholder">⚔️</div>`}
             </div>
 
             <div class="drop-card-name">${item.name}</div>
@@ -3643,6 +4960,8 @@ function initTelegramProfile(){
         tg.expand();
         const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
         if(!user) return;
+        
+        // --- Аватарка ---
         const avatar = document.getElementById("profileAvatar");
         const img = document.getElementById("profileAvatarImage");
         const fallback = document.getElementById("profileAvatarFallback");
@@ -3654,65 +4973,30 @@ function initTelegramProfile(){
                 if(fallback) fallback.style.display = "none";
             };
         }
+        
+        // --- Имя пользователя ---
+        const nameEl = document.getElementById("profileName");
+        if (nameEl) {
+            const displayName = user.username 
+                ? '@' + user.username 
+                : user.first_name || 'Игрок';
+            nameEl.textContent = displayName;
+        }
     }catch(e){}
 }
 
-initTelegramProfile();
-loadGame();
-updateBalance();
-updateInventory();
-updateStats();
-renderDropList();
-buildRoulette();
-renderNFTCatalog();
-validateDrops();
-
-</script>
-
-
-<script>
-/* Telegram MiniApp interaction polish */
-document.addEventListener('contextmenu', function(e){
-    e.preventDefault();
-});
-
-document.addEventListener('dragstart', function(e){
-    if(e.target && e.target.tagName === 'IMG') e.preventDefault();
-});
-
-document.addEventListener('selectstart', function(e){
-    e.preventDefault();
-});
-
-/* Prevent accidental copy shortcuts, but keep inputs usable */
-document.addEventListener('keydown', function(e){
-    const tag = (e.target.tagName || '').toLowerCase();
-    if(['input','textarea'].includes(tag)) return;
-    if((e.ctrlKey || e.metaKey) && ['c','u','s','a'].includes(e.key.toLowerCase())){
-        e.preventDefault();
-    }
-});
-</script>
-
-
-<script>
-/* Mobile viewport / Telegram WebApp polish */
-(function(){
-    try{
-        const tg=window.Telegram&&window.Telegram.WebApp;
-        if(!tg)return;
-        tg.ready(); tg.expand();
-        if(typeof tg.setHeaderColor==="function")tg.setHeaderColor("#0b0b0e");
-        if(typeof tg.setBackgroundColor==="function")tg.setBackgroundColor("#0b0b0e");
-        const sync=()=>{
-            const h=tg.viewportStableHeight||tg.viewportHeight||window.innerHeight;
-            document.documentElement.style.setProperty("--tg-content-height",h+"px");
-        };
-        sync();
-        if(typeof tg.onEvent==="function")tg.onEvent("viewportChanged",sync);
-        window.addEventListener("resize",sync,{passive:true});
-    }catch(e){}
+// Запускаем асинхронную загрузку
+(async function init() {
+    await loadGame();
+    updateBalance();
+    updateInventory();
+    updateStats();
+    renderDropList();
+    buildRoulette();
+    validateDrops();
+    initTelegramProfile();
 })();
+
 </script>
 
 </body>

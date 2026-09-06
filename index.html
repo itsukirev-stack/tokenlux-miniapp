@@ -1,0 +1,3510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TokenLux</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+:root{
+    /* Чёрный + золото — классика */
+    --bg:#0b0b0e;
+    --panel:#161615;
+    --panel2:#201f1c;
+    --line:rgba(245,211,79,.14);
+    --text:#f7f6f2;
+    --muted:#9a968a;
+
+    /* Золотой акцент как основной, тёплое золото на подхвате */
+    --accent:#f5d34f;
+    --accent2:#d4a72c;
+    --gold:#f5d34f;
+
+    /* Локальные акценты редкости */
+    --red:#e45d5d;
+    --orange:#e9a04f;
+    --cyan:#63b5d9;
+
+    --font-display:"Unbounded",Inter,sans-serif;
+}
+
+body{
+    background:
+        radial-gradient(circle at 15% -6%,rgba(245,211,79,.09),transparent 38%),
+        radial-gradient(circle at 88% 8%,rgba(245,211,79,.05),transparent 36%),
+        radial-gradient(circle at 20% 92%,rgba(245,211,79,.05),transparent 32%),
+        var(--bg);
+    color:var(--text);
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+}
+
+/* Тонкий шум поверх фона — на десктопе; на телефонах отключается ниже (blend-mode дорогой) */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    opacity:.035;
+    mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Плавающие световые пятна — лёгкий статичный blur, движение через transform (дёшево для GPU) */
+.ambient-glow{
+    position:fixed;
+    z-index:0;
+    pointer-events:none;
+    border-radius:50%;
+    filter:blur(46px);
+    opacity:.5;
+    will-change:transform;
+}
+.ambient-glow.g1{
+    width:340px;height:340px;
+    left:-120px;top:-80px;
+    background:radial-gradient(circle,rgba(245,211,79,.14),transparent 70%);
+    animation:driftA 22s ease-in-out infinite;
+}
+.ambient-glow.g2{
+    width:300px;height:300px;
+    right:-140px;bottom:10%;
+    background:radial-gradient(circle,rgba(245,211,79,.10),transparent 70%);
+    animation:driftB 26s ease-in-out infinite;
+}
+@keyframes driftA{
+    0%,100%{transform:translate3d(0,0,0)}
+    50%{transform:translate3d(40px,60px,0)}
+}
+@keyframes driftB{
+    0%,100%{transform:translate3d(0,0,0)}
+    50%{transform:translate3d(-35px,-45px,0)}
+}
+
+.app{position:relative;z-index:1}
+
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(245,211,79,.35);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:rgba(245,211,79,.55)}
+
+/* ===== ПРОИЗВОДИТЕЛЬНОСТЬ НА СЛАБЫХ/МОБИЛЬНЫХ УСТРОЙСТВАХ =====
+   На узких экранах убираем самые дорогие для GPU эффекты:
+   blend-mode шум, крупные размытые пятна и бесконечные blur-анимации кейсов. */
+@media (max-width:700px){
+    body::before{display:none}
+    .ambient-glow{display:none}
+    .cases .case::before{animation:none;filter:blur(14px)}
+    .case-fx{will-change:auto}
+}
+
+/* Уважаем системную настройку "уменьшить анимацию" */
+@media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{
+        animation-duration:.001ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.001ms !important;
+        scroll-behavior:auto !important;
+    }
+    body::before,.ambient-glow{display:none}
+}
+
+/* APP */
+
+.app{
+    max-width:1100px;
+    margin:auto;
+    padding-bottom:95px;
+}
+
+/* HEADER */
+
+.header{
+    height:70px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 22px;
+    border-bottom:1px solid var(--line);
+    background:rgba(10,10,18,.82);
+    backdrop-filter:blur(20px);
+    position:sticky;
+    top:0;
+    z-index:20;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:11px;
+}
+
+.brand-name{
+    font-family:var(--font-display);
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:.2px;
+}
+
+.logo{
+    width:40px;
+    height:40px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+    position:relative;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0a0a12;
+    box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 8px 26px rgba(245,211,79,.35);
+}
+
+.logo span{
+    position:relative;
+    z-index:1;
+    animation:logoSpin 6s linear infinite;
+    display:inline-block;
+}
+@keyframes logoSpin{
+    0%,80%{transform:rotate(0)}
+    90%{transform:rotate(180deg)}
+    100%{transform:rotate(360deg)}
+}
+
+.brand-sub{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.5px;
+    color:var(--muted);
+    margin-top:2px;
+}
+
+.balance{
+    display:flex;
+    align-items:center;
+    gap:9px;
+}
+
+.balance-box{
+    padding:9px 13px;
+    border-radius:13px;
+    background:var(--panel2);
+    border:1px solid var(--line);
+    font-weight:800;
+    color:var(--gold);
+}
+
+.balance-icon{
+    color:#62a5ff;
+}
+
+.add{
+    width:38px;
+    height:38px;
+    border:0;
+    border-radius:12px;
+    color:#0a0a12;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    font-size:20px;
+    font-weight:900;
+    cursor:pointer;
+    transition:.2s ease;
+    box-shadow:0 6px 20px rgba(245,211,79,.3);
+}
+
+.add:hover{
+    transform:translateY(-2px);
+    box-shadow:0 10px 26px rgba(245,211,79,.45);
+}
+
+/* CONTENT */
+
+.content{
+    padding:22px;
+}
+
+.page{
+    display:none;
+}
+
+.page.active{
+    display:block;
+}
+
+/* HERO */
+
+.hero{
+    position:relative;
+    overflow:hidden;
+    padding:30px;
+    min-height:190px;
+    border-radius:24px;
+    background:
+        radial-gradient(circle at 85% 30%,rgba(245,211,79,.16),transparent 34%),
+        radial-gradient(circle at 60% 110%,rgba(212,167,44,.10),transparent 38%),
+        linear-gradient(150deg,#181723,#0f0e17);
+    border:1px solid rgba(245,211,79,.2);
+}
+
+.hero:after{
+    content:"✦";
+    position:absolute;
+    right:60px;
+    top:18px;
+    font-size:100px;
+    opacity:.07;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:heroStarSpin 12s linear infinite;
+}
+@keyframes heroStarSpin{
+    to{transform:rotate(360deg)}
+}
+
+.hero-tag{
+    display:inline-block;
+    padding:6px 11px;
+    border-radius:8px;
+    background:linear-gradient(135deg,rgba(245,211,79,.16),rgba(212,167,44,.12));
+    border:1px solid rgba(245,211,79,.3);
+    color:#f5e3a8;
+    font-size:11px;
+    font-weight:700;
+    margin-bottom:14px;
+}
+
+.hero h1{
+    font-family:var(--font-display);
+    font-size:29px;
+    font-weight:700;
+    line-height:1.18;
+    max-width:500px;
+    letter-spacing:-.2px;
+}
+
+.hero p{
+    color:var(--muted);
+    margin-top:11px;
+    max-width:520px;
+    line-height:1.5;
+    font-size:14px;
+}
+
+.hero-btn{
+    position:relative;
+    margin-top:20px;
+    border:0;
+    color:#0a0a12;
+    font-weight:800;
+    padding:13px 20px;
+    border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    cursor:pointer;
+    overflow:hidden;
+    transition:transform .2s ease,box-shadow .2s ease;
+    box-shadow:0 10px 30px rgba(245,211,79,.25);
+}
+
+.hero-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 36px rgba(245,211,79,.4);
+}
+
+.hero-btn::after{
+    content:"";
+    position:absolute;
+    top:0;bottom:0;
+    width:40%;
+    left:-60%;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+    transform:skewX(-20deg);
+    animation:heroBtnSheen 3.2s ease-in-out infinite;
+}
+@keyframes heroBtnSheen{
+    0%{left:-60%}
+    35%,100%{left:130%}
+}
+
+/* SECTION */
+
+.section-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:28px 2px 14px;
+}
+
+.section-head h2{
+    font-family:var(--font-display);
+    font-size:18px;
+    font-weight:500;
+}
+
+.section-head span{
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* CASES */
+
+.cases{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+}
+
+.case{
+    position:relative;
+    padding:14px;
+    border-radius:18px;
+    background:linear-gradient(145deg,#1c1a29,#121019);
+    border:1px solid var(--line);
+    cursor:pointer;
+    transition:.2s;
+    overflow:hidden;
+}
+
+.case:hover{
+    transform:translateY(-4px);
+    border-color:rgba(245,211,79,.32);
+    box-shadow:0 15px 40px rgba(0,0,0,.42),0 0 28px rgba(245,211,79,.045);
+}
+
+.case-image{
+    height:145px;
+    border-radius:14px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:75px;
+    background:
+        radial-gradient(circle,rgba(255,255,255,.075),transparent 60%),
+        #101015;
+    overflow:hidden;
+}
+
+.case-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 14px;
+}
+
+.case-big{
+    width:190px;
+    height:190px;
+    margin:5px auto 20px;
+    border-radius:25px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:100px;
+    background:
+        radial-gradient(circle,rgba(255,255,255,.11),transparent 65%),
+        #101015;
+    box-shadow:0 0 80px rgba(255,255,255,.08);
+    overflow:hidden;
+}
+
+.case-big img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    border-radius: 25px;
+}
+
+.case-name{
+    margin-top:12px;
+    font-weight:800;
+    font-size:14px;
+}
+
+.case-info{
+    display:flex;
+    justify-content:space-between;
+    margin-top:7px;
+    color:var(--muted);
+    font-size:11px;
+}
+
+.price{
+    color:#fff;
+    font-weight:700;
+}
+
+/* OPEN CASE */
+
+.case-open{
+    margin-top:20px;
+    padding:25px;
+    border-radius:22px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    text-align:center;
+}
+
+.case-big{
+    width:190px;
+    height:190px;
+    margin:5px auto 20px;
+    border-radius:25px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:100px;
+    background:
+        radial-gradient(circle,rgba(255,255,255,.11),transparent 65%),
+        #101015;
+    box-shadow:0 0 80px rgba(255,255,255,.08);
+    overflow:hidden;
+}
+
+.case-big img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 25px;
+}
+
+.case-open h2{
+    font-family:var(--font-display);
+    font-size:21px;
+    font-weight:500;
+}
+
+.case-open p{
+    color:var(--muted);
+    margin:7px 0 18px;
+    font-size:13px;
+}
+
+.open-btn{
+    width:100%;
+    max-width:390px;
+    height:50px;
+    border:0;
+    border-radius:13px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0a0a12;
+    font-size:15px;
+    font-weight:900;
+    cursor:pointer;
+    transition:transform .18s ease,box-shadow .18s ease;
+    box-shadow:0 10px 28px rgba(245,211,79,.22);
+}
+
+.open-btn:hover:not(:disabled){
+    transform:translateY(-2px);
+    box-shadow:0 14px 34px rgba(245,211,79,.38);
+}
+
+.open-btn:disabled{
+    opacity:.5;
+}
+
+/* INVENTORY */
+
+.inventory-top{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+.filter{
+    padding:9px 13px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:white;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.filter.active{
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border-color:transparent;
+    color:#0a0a12;
+    font-weight:800;
+}
+
+.inventory{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:12px;
+}
+
+.nft{
+    position:relative;
+    overflow:hidden;
+    padding:11px;
+    border-radius:16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+}
+
+.nft-img img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+    border-radius:12px;
+}
+
+.nft-img.has-image{
+    padding:0;
+    overflow:hidden;
+}
+
+.nft-img{
+    height:125px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:58px;
+    background:#0b0b11;
+    overflow:hidden;
+}
+
+.nft-name{
+    font-size:12px;
+    font-weight:800;
+    margin-top:9px;
+}
+
+.nft-price{
+    font-size:11px;
+    color:var(--muted);
+    margin-top:5px;
+}
+
+.rarity{
+    position:absolute;
+    top:17px;
+    left:17px;
+    padding:4px 7px;
+    border-radius:6px;
+    font-size:8px;
+    font-weight:800;
+    background:rgba(0,0,0,.6);
+}
+
+.legendary{
+    color:#ffd45a;
+}
+
+.epic{
+    color:#bd7cff;
+}
+
+.rare{
+    color:#59a8ff;
+}
+
+.common{
+    color:#9b9baa;
+}
+
+/* PROFILE */
+
+.profile{
+    text-align:center;
+}
+
+.avatar{
+    width:80px;
+    height:80px;
+    margin:10px auto;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:35px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#0a0a12;
+    box-shadow:0 0 0 4px rgba(245,211,79,.12),0 10px 30px rgba(245,211,79,.25);
+}
+
+.profile h2{
+    margin-top:8px;
+}
+
+.profile p{
+    color:var(--muted);
+    font-size:13px;
+}
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+    margin-top:25px;
+}
+
+.stat{
+    padding:20px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    transition:border-color .2s ease,transform .2s ease;
+}
+
+.stat:hover{
+    border-color:rgba(245,211,79,.35);
+    transform:translateY(-2px);
+}
+
+.stat strong{
+    display:block;
+    font-family:var(--font-display);
+    font-size:21px;
+    font-weight:700;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+}
+
+.stat span{
+    color:var(--muted);
+    font-size:11px;
+}
+
+/* BOTTOM NAV */
+
+.nav{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:50;
+    display:flex;
+    justify-content:center;
+    background:rgba(10,10,16,.9);
+    backdrop-filter:blur(20px);
+    border-top:1px solid var(--line);
+}
+
+.nav-inner{
+    width:min(700px,100%);
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+}
+
+.nav button{
+    border:0;
+    background:none;
+    color:#777786;
+    padding:13px 5px 11px;
+    cursor:pointer;
+    font-size:11px;
+}
+
+.nav button div{
+    font-size:20px;
+    margin-bottom:4px;
+}
+
+.nav button{
+    position:relative;
+    transition:color .2s ease;
+}
+
+.nav button.active{
+    color:var(--accent2);
+}
+
+.nav button.active::before{
+    content:"";
+    position:absolute;
+    top:2px;
+    left:50%;
+    transform:translateX(-50%);
+    width:26px;
+    height:3px;
+    border-radius:3px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    box-shadow:0 0 10px rgba(245,211,79,.7);
+}
+
+/* TOAST */
+
+.toast{
+    position:fixed;
+    left:50%;
+    bottom:85px;
+    transform:translate(-50%,20px);
+    padding:12px 18px;
+    background:#181725;
+    border:1px solid rgba(245,211,79,.3);
+    border-radius:13px;
+    opacity:0;
+    pointer-events:none;
+    transition:.25s;
+    z-index:100;
+    font-size:13px;
+    box-shadow:0 12px 34px rgba(0,0,0,.4),0 0 22px rgba(245,211,79,.12);
+}
+
+.toast.show{
+    opacity:1;
+    transform:translate(-50%,0);
+}
+
+/* ===== TELEGRAM AVATAR + TITLES ===== */
+.telegram-avatar{position:relative;overflow:hidden;}
+.telegram-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;}
+.telegram-avatar.has-photo #profileAvatarFallback{display:none;}
+.title-row{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px;}
+.player-title{font-size:13px;font-weight:900;}
+.player-title.newcomer{color:#43d17a;}
+.player-title.holder{color:#8ecbff;}
+.player-title.experienced{color:#62b7ff;}
+.player-title.collector{color:#c084fc;}
+.player-title.investor{color:#f5d34f;}
+.player-title.trader{color:#ff9d52;}
+.player-title.durov{color:#ff5f6d;}
+.title-help{width:19px;height:19px;border-radius:50%;border:1px solid #4a4a53;background:#1c1c23;color:#b8b8c2;font-size:11px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;}
+.title-help:hover{border-color:#777783;color:#fff;}
+.titles-modal{display:none;position:fixed;inset:0;z-index:200;}
+.titles-modal.open{display:flex;align-items:center;justify-content:center;padding:20px;}
+.titles-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(7px);}
+.titles-modal-card{position:relative;width:min(440px,100%);max-height:min(720px,90vh);overflow:auto;background:#15140f;border:1px solid rgba(245,211,79,.22);border-radius:20px;padding:20px;box-shadow:0 25px 80px rgba(0,0,0,.55),0 0 60px rgba(245,211,79,.08);}
+.titles-modal-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;margin-bottom:14px;}
+.titles-modal-head h2{font-size:20px;margin:0;}
+.titles-modal-head p{color:#777783;font-size:12px;margin-top:5px;}
+.titles-close{border:0;background:#24242c;color:#aaa;width:32px;height:32px;border-radius:10px;font-size:23px;cursor:pointer;line-height:1;}
+.titles-list{display:flex;flex-direction:column;gap:8px;}
+.title-item{display:flex;align-items:center;gap:12px;padding:12px 13px;border:1px solid #292930;background:#101015;border-radius:13px;opacity:.6;}
+.title-item.unlocked{opacity:1;border-color:#3a3a43;}
+.title-item > div{flex:1;display:flex;flex-direction:column;gap:3px;}
+.title-item strong{font-size:13px;}
+.title-item small{font-size:10px;color:#777783;}
+.title-dot{width:10px;height:10px;border-radius:50%;background:#777;flex:none;}
+.title-dot.newcomer{background:#43d17a;}
+.title-dot.holder{background:#8ecbff;}
+.title-dot.experienced{background:#62b7ff;}
+.title-dot.collector{background:#c084fc;}
+.title-dot.investor{background:#f5d34f;}
+.title-dot.trader{background:#ff9d52;}
+.title-dot.durov{background:#ff5f6d;}
+.title-status{font-size:13px;color:#43d17a;font-weight:900;}
+.title-item.current{border-color:#43d17a;box-shadow:0 0 0 1px rgba(67,209,122,.12) inset;}
+
+/* RESPONSIVE */
+
+
+/* ===== PROFILE NFT PRICE BUTTON ===== */
+.profile-catalog-block{margin-top:28px}
+.profile-menu-btn{width:100%;display:flex;align-items:center;gap:14px;padding:16px 18px;text-align:left;background:linear-gradient(145deg,#18160f,#100f0a);border:1px solid #2a2836;border-radius:15px;color:#eee;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.profile-menu-btn:hover{border-color:rgba(245,211,79,.45);background:linear-gradient(145deg,#1c1a12,#111016);transform:translateY(-1px)}
+.profile-menu-icon{width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:linear-gradient(135deg,rgba(245,211,79,.22),rgba(212,167,44,.16));font-size:22px;flex:none}
+.profile-menu-text{display:flex;flex-direction:column;gap:4px;flex:1}
+.profile-menu-text strong{font-size:14px;font-weight:900}
+.profile-menu-text small{font-size:11px;color:#777783;font-weight:700}
+.profile-menu-arrow{font-size:28px;line-height:1;color:#777783;transition:transform .2s}
+.profile-menu-btn.open .profile-menu-arrow{transform:rotate(90deg)}
+.nft-catalog-panel{display:none;margin-top:14px;padding:18px;border:1px solid #28282f;border-radius:16px;background:#101015}
+.nft-catalog-panel.open{display:block}
+
+/* ===== GROUPED NFT CATALOG ===== */
+.nft-section-head{align-items:flex-end}
+.nft-catalog-sub{margin:5px 0 0;color:#777;font-size:13px}
+.nft-catalog-grouped{display:flex;flex-direction:column;gap:30px;margin-top:8px;padding-bottom:25px}
+.rarity-category{display:block}
+.rarity-category-title{display:flex;align-items:center;gap:12px;margin-bottom:13px}
+.rarity-title-badge{display:inline-flex;align-items:center;justify-content:center;min-width:105px;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:900;letter-spacing:1.5px;background:#19191f;border:1px solid #303038;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.rarity-title-badge.common{color:#b9b9b9}
+.rarity-title-badge.rare{color:#5aa9ff}
+.rarity-title-badge.epic{color:#b66cff}
+.rarity-title-badge.legendary{color:#ffd35a}
+.rarity-title-badge.other{color:#ff8a52}
+.rarity-category-line{height:1px;flex:1;background:linear-gradient(90deg,#34343d,transparent);opacity:.9}
+.rarity-category-count{color:#707079;font-size:12px;font-weight:800}
+.nft-category-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.catalog-nft{position:relative;overflow:hidden;padding:10px;border:1px solid #292930;border-radius:14px;background:linear-gradient(145deg,#17171c,#0d0d11);transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.catalog-nft:hover{transform:translateY(-4px);border-color:#55555f;box-shadow:0 16px 35px rgba(0,0,0,.32)}
+.catalog-nft-img{height:175px;border-radius:10px;overflow:hidden;background:radial-gradient(circle at 50% 35%,rgba(255,255,255,.09),transparent 45%),#101015;display:flex;align-items:center;justify-content:center}
+.catalog-nft-img img{width:100%;height:100%;object-fit:contain;display:block}
+.catalog-nft-placeholder{font-size:50px;opacity:.7}
+.catalog-nft-info{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 3px 5px}
+.catalog-nft-name{font-size:14px;font-weight:850;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catalog-nft-price{font-size:13px;font-weight:900;color:#f5d34f;white-space:nowrap}
+.catalog-nft-case{font-size:10px;color:#707078;padding:0 3px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.catalog-nft.rarity-common{border-color:rgba(170,170,170,.12)}
+.catalog-nft.rarity-rare:hover{border-color:rgba(80,160,255,.55);box-shadow:0 16px 38px rgba(50,130,255,.12)}
+.catalog-nft.rarity-epic:hover{border-color:rgba(170,90,255,.6);box-shadow:0 16px 38px rgba(150,70,255,.14)}
+.catalog-nft.rarity-legendary:hover{border-color:rgba(255,205,65,.65);box-shadow:0 16px 40px rgba(255,190,40,.16)}
+.nft-empty{padding:45px;text-align:center;color:#777;background:#111116;border:1px solid #25252d;border-radius:14px}
+
+@media(max-width:800px){
+    .cases{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .inventory{
+        grid-template-columns:repeat(3,1fr);
+    }
+}
+
+@media(max-width:500px){
+    .header{
+        padding:0 14px;
+    }
+
+    .content{
+        padding:14px;
+    }
+
+    .hero{
+        padding:22px;
+    }
+
+    .hero h1{
+        font-size:26px;
+    }
+
+    .cases{
+        grid-template-columns:repeat(2,1fr);
+        gap:9px;
+    }
+
+    .case{
+        padding:9px;
+    }
+
+    .case-image{
+        height:115px;
+        font-size:58px;
+    }
+
+    .inventory{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .stats{
+        grid-template-columns:1fr;
+    }
+}
+
+/* ===== UNIVERSAL CASE-COMPATIBLE COLOR SYSTEM =====
+   Основной интерфейс нейтральный, а цвет приходит от самих изображений кейсов.
+*/
+.case:nth-child(1):hover{
+    border-color:rgba(228,93,93,.42);
+    box-shadow:0 15px 40px rgba(0,0,0,.42),0 0 30px rgba(228,93,93,.08);
+}
+.case:nth-child(2):hover{
+    border-color:rgba(233,160,79,.42);
+    box-shadow:0 15px 40px rgba(0,0,0,.42),0 0 30px rgba(233,160,79,.08);
+}
+.case:nth-child(3):hover{
+    border-color:rgba(99,181,217,.42);
+    box-shadow:0 15px 40px rgba(0,0,0,.42),0 0 30px rgba(99,181,217,.08);
+}
+.case:nth-child(4):hover{
+    border-color:rgba(245,211,79,.42);
+    box-shadow:0 15px 40px rgba(0,0,0,.42),0 0 30px rgba(245,211,79,.08);
+}
+
+.case-open{
+    background:
+        radial-gradient(circle at 50% 0%,rgba(255,255,255,.035),transparent 45%),
+        var(--panel);
+}
+
+.balance-box{
+    box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+
+.price{
+    color:#f5d34f;
+}
+
+
+.drop-info{
+    max-width:760px;
+    margin:22px auto 4px;
+    padding:18px 18px 20px;
+    border-radius:16px;
+    background:linear-gradient(180deg,rgba(245,211,79,.035),transparent 40%),var(--panel);
+    border:1px solid var(--line);
+    text-align:left;
+}
+
+.drop-info-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:13px;
+}
+
+.drop-info-head h3{
+    font-family:var(--font-display);
+    font-size:16px;
+    font-weight:500;
+}
+
+.drop-info-count{
+    font-size:11px;
+    color:var(--muted);
+}
+
+.drop-chip{
+    padding:6px 9px;
+    border-radius:8px;
+    background:#0b0b11;
+    border:1px solid var(--line);
+    font-size:10px;
+    color:#cfcfd8;
+}
+
+
+.roulette-wrap{
+    max-width:920px;
+    margin:20px auto 15px;
+}
+.roulette-title{
+    text-align:center;
+    color:#8e8e99;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:1.5px;
+    margin-bottom:9px;
+}
+.roulette-window{
+    position:relative;
+    height:160px;
+    overflow:hidden;
+    border-radius:18px;
+    background:#08080d;
+    border:1px solid rgba(245,211,79,.16);
+    box-shadow:inset 0 0 45px rgba(0,0,0,.85),0 12px 35px rgba(0,0,0,.2);
+}
+.roulette-window:before,
+.roulette-window:after{
+    content:"";
+    position:absolute;
+    z-index:4;
+    top:0;
+    bottom:0;
+    width:150px;
+    pointer-events:none;
+}
+.roulette-window:before{
+    left:0;
+    background:linear-gradient(90deg,#08080d,rgba(8,8,13,.7),transparent);
+}
+.roulette-window:after{
+    right:0;
+    background:linear-gradient(-90deg,#08080d,rgba(8,8,13,.7),transparent);
+}
+.roulette-track{
+    position:absolute;
+    left:0;
+    top:8px;
+    height:144px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    will-change:transform;
+}
+.roulette-item{
+    flex:0 0 122px;
+    height:142px;
+    padding:7px;
+    border-radius:13px;
+    background:linear-gradient(145deg,#19191f,#101016);
+    border:1px solid rgba(255,255,255,.08);
+    text-align:center;
+    overflow:hidden;
+}
+.roulette-item img{
+    width:100%;
+    height:92px;
+    object-fit:contain;
+    display:block;
+    border-radius:8px;
+    background:#07070b;
+}
+.roulette-item-name{
+    margin-top:6px;
+    font-size:9px;
+    font-weight:900;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.roulette-item-rarity{
+    margin-top:3px;
+    font-size:7px;
+    color:#858590;
+}
+.roulette-pointer{
+    position:absolute;
+    z-index:8;
+    left:50%;
+    top:0;
+    bottom:0;
+    width:3px;
+    transform:translateX(-50%);
+    background:linear-gradient(180deg,#f5d34f,rgba(245,211,79,.65),transparent);
+    box-shadow:0 0 18px rgba(245,211,79,.45);
+    pointer-events:none;
+}
+.roulette-pointer:before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:0;
+    transform:translateX(-50%);
+    border-left:9px solid transparent;
+    border-right:9px solid transparent;
+    border-bottom:14px solid #f5d34f;
+}
+.roulette-status{
+    min-height:28px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#777783;
+    font-size:11px;
+    text-align:center;
+}
+.open-btn.is-opening{
+    position:relative;
+    overflow:hidden;
+}
+.open-btn.is-opening:after{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    width:42%;
+    transform:skewX(-20deg) translateX(-180%);
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+    animation:rouletteShine .65s infinite;
+}
+@keyframes rouletteShine{
+    to{transform:skewX(-20deg) translateX(360%)}
+}
+.drop-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+    gap:10px;
+}
+.drop-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    padding:10px;
+    border-radius:13px;
+    background:linear-gradient(150deg,#18170f,#0e0d0a);
+    border:1px solid var(--line);
+    transition:transform .2s ease,border-color .2s ease;
+}
+.drop-card:hover{
+    transform:translateY(-3px);
+    border-color:rgba(245,211,79,.4);
+}
+.drop-card-img{
+    height:78px;
+    border-radius:9px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    background:#08080b;
+    margin-bottom:8px;
+}
+.drop-card img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+}
+.drop-card-name{
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.drop-card-rarity{
+    margin-top:4px;
+    font-size:9px;
+    font-weight:800;
+    letter-spacing:.3px;
+}
+.drop-card-chance{
+    position:absolute;
+    top:8px;
+    right:8px;
+    padding:3px 7px;
+    border-radius:7px;
+    background:rgba(0,0,0,.55);
+    color:#f5d34f;
+    font-size:10px;
+    font-weight:900;
+}
+.case-big.reveal{
+    animation:caseNFTReveal .8s cubic-bezier(.15,.85,.2,1);
+}
+@keyframes caseNFTReveal{
+    0%{transform:scale(.68);opacity:.1;filter:blur(7px)}
+    55%{transform:scale(1.1);opacity:1;filter:brightness(1.5)}
+    100%{transform:scale(1);opacity:1;filter:none}
+}
+
+
+
+/* ===== SELL NFT ===== */
+.sell-nft-btn{
+    width:100%;
+    margin-top:9px;
+    min-height:32px;
+    border:1px solid rgba(245,211,79,.25);
+    border-radius:9px;
+    background:linear-gradient(135deg,#2a291f,#17171b);
+    color:#f5d34f;
+    font-size:9px;
+    font-weight:900;
+    cursor:pointer;
+    transition:.18s ease;
+}
+.sell-nft-btn:hover{
+    transform:translateY(-1px);
+    border-color:rgba(245,211,79,.6);
+    box-shadow:0 7px 18px rgba(245,211,79,.09);
+}
+.sell-nft-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ===== NFT CATALOG ===== */
+.nft-catalog-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:-4px 2px 16px;
+}
+.nft-catalog-sub{
+    color:#c9c9d2;
+    font-size:12px;
+}
+.nft-catalog-hint{
+    color:#777783;
+    font-size:11px;
+}
+.nft-catalog{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:14px;
+}
+.catalog-nft{
+    position:relative;
+    overflow:hidden;
+    padding:10px;
+    border-radius:18px;
+    background:linear-gradient(145deg,#24242d,#15151b);
+    border:1px solid var(--line);
+    transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.catalog-nft:hover{
+    transform:translateY(-5px);
+    border-color:rgba(245,211,79,.34);
+    box-shadow:0 18px 42px rgba(0,0,0,.42),0 0 28px rgba(245,211,79,.07);
+}
+.catalog-nft-img{
+    height:185px;
+    border-radius:14px;
+    background:
+        radial-gradient(circle at 50% 35%,rgba(255,255,255,.10),transparent 48%),
+        #0b0b10;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+.catalog-nft-img img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+}
+.catalog-nft-name{
+    margin:10px 2px 0;
+    font-size:13px;
+    font-weight:900;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.catalog-nft-price{
+    margin:5px 2px 0;
+    color:#f5d34f;
+    font-size:12px;
+    font-weight:900;
+}
+.catalog-nft-meta{
+    margin:5px 2px 0;
+    color:#777783;
+    font-size:9px;
+}
+.catalog-nft .rarity{
+    top:16px;
+    left:16px;
+}
+
+/* ===== DOTA FIRE HOVER ===== */
+.cases .case:nth-child(5){
+    isolation:isolate;
+}
+.cases .case:nth-child(5)::before{
+    content:"";
+    position:absolute;
+    inset:-35%;
+    z-index:-1;
+    opacity:0;
+    pointer-events:none;
+    background:
+        radial-gradient(circle at 50% 100%,rgba(255,90,0,.62),transparent 28%),
+        radial-gradient(circle at 25% 85%,rgba(255,185,30,.42),transparent 24%),
+        radial-gradient(circle at 75% 85%,rgba(255,45,0,.48),transparent 26%);
+    filter:blur(22px);
+    transition:opacity .25s ease;
+}
+.cases .case:nth-child(5)::after{
+    content:"";
+    position:absolute;
+    left:12%;
+    right:12%;
+    bottom:-18px;
+    height:75px;
+    z-index:-1;
+    opacity:0;
+    pointer-events:none;
+    background:
+        radial-gradient(ellipse at 50% 100%,rgba(255,80,0,.78),transparent 62%);
+    filter:blur(12px);
+    transition:opacity .25s ease,transform .25s ease;
+}
+.cases .case:nth-child(5):hover{
+    border-color:rgba(255,105,20,.75);
+    box-shadow:
+        0 15px 42px rgba(0,0,0,.48),
+        0 0 28px rgba(255,75,0,.24),
+        0 0 65px rgba(255,145,20,.16);
+}
+.cases .case:nth-child(5):hover::before,
+.cases .case:nth-child(5):hover::after{
+    opacity:1;
+}
+.cases .case:nth-child(5):hover::after{
+    transform:scale(1.08);
+}
+.cases .case:nth-child(5):hover .case-image{
+    box-shadow:0 0 30px rgba(255,80,0,.20);
+}
+@keyframes dotaFire{
+    0%,100%{transform:translateY(0) scale(1);filter:brightness(1)}
+    50%{transform:translateY(-2px) scale(1.015);filter:brightness(1.16)}
+}
+.cases .case:nth-child(5):hover .case-image img{
+    animation:dotaFire .8s ease-in-out infinite;
+}
+
+@media(max-width:800px){
+    .nft-category-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .nft-catalog{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+}
+@media(max-width:500px){
+    .nft-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+    .catalog-nft-img{height:150px;}
+    .nft-catalog-top{
+        align-items:flex-start;
+        flex-direction:column;
+        gap:5px;
+    }
+    .nft-catalog{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:9px;
+    }
+    .catalog-nft{
+        padding:8px;
+    }
+    .catalog-nft-img{
+        height:150px;
+    }
+}
+
+/* ===== EPIC ROULETTE / DOTA PLACEHOLDER ===== */
+.dota-placeholder,.roulette-placeholder,.drop-placeholder{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+        radial-gradient(circle at 50% 35%,rgba(255,255,255,.12),transparent 38%),
+        linear-gradient(145deg,#262630,#09090d);
+    font-size:42px;
+}
+.roulette-placeholder{height:92px;border-radius:8px}
+.drop-placeholder{width:44px;height:44px;border-radius:8px;font-size:18px}
+
+.roulette-window.epic{
+    animation:rouletteEpicWindow 1.15s ease-out;
+}
+.roulette-window.epic .roulette-pointer{
+    animation:pointerPulse .55s ease-in-out 3;
+}
+.roulette-track .winner-glow{
+    animation:winnerPulse 1s ease-out 2;
+    border-color:rgba(245,211,79,.9);
+    box-shadow:0 0 35px rgba(245,211,79,.65), inset 0 0 25px rgba(245,211,79,.12);
+}
+.case-big.epic-reveal{
+    animation:epicReveal 1.15s cubic-bezier(.12,.82,.18,1);
+    box-shadow:0 0 30px rgba(245,211,79,.45),0 0 100px rgba(245,211,79,.22);
+}
+@keyframes winnerPulse{
+    0%{transform:scale(1);filter:brightness(1)}
+    45%{transform:scale(1.06);filter:brightness(1.65)}
+    100%{transform:scale(1);filter:brightness(1)}
+}
+@keyframes pointerPulse{
+    0%,100%{opacity:.65;filter:brightness(1)}
+    50%{opacity:1;filter:brightness(2.2)}
+}
+@keyframes rouletteEpicWindow{
+    0%{box-shadow:inset 0 0 45px rgba(0,0,0,.85),0 12px 35px rgba(0,0,0,.2)}
+    45%{box-shadow:inset 0 0 70px rgba(245,211,79,.18),0 0 65px rgba(245,211,79,.18)}
+    100%{box-shadow:inset 0 0 45px rgba(0,0,0,.85),0 12px 35px rgba(0,0,0,.2)}
+}
+@keyframes epicReveal{
+    0%{transform:scale(.5) rotate(-3deg);opacity:0;filter:blur(12px) brightness(2)}
+    45%{transform:scale(1.18) rotate(2deg);opacity:1;filter:blur(0) brightness(1.9)}
+    70%{transform:scale(.96) rotate(-.5deg);filter:brightness(1.3)}
+    100%{transform:scale(1) rotate(0);opacity:1;filter:none}
+}
+
+/* Конфетти для LEGENDARY дропа */
+.confetti-layer{
+    position:fixed;
+    inset:0;
+    z-index:300;
+    pointer-events:none;
+    overflow:hidden;
+}
+.confetti-piece{
+    position:absolute;
+    top:38%;
+    border-radius:1px;
+    opacity:0;
+    animation:confettiFall ease-out forwards;
+}
+@keyframes confettiFall{
+    0%{transform:translate(0,var(--rise)) rotate(0deg);opacity:0}
+    12%{opacity:1}
+    100%{transform:translate(var(--drift),340px) rotate(540deg);opacity:0}
+}
+
+/* ===== ЭФФЕКТЫ ВЫПАДЕНИЯ NFT ПО ЦВЕТОКОРУ КЕЙСА ===== */
+.reveal-fx{
+    position:fixed;
+    z-index:250;
+    pointer-events:none;
+    width:0;
+    height:0;
+}
+.reveal-fx-ring{
+    position:absolute;
+    left:0;top:0;
+    width:44px;height:44px;
+    margin:-22px 0 0 -22px;
+    border-radius:50%;
+    border:2px solid currentColor;
+    opacity:0;
+    animation:revealRing .75s ease-out forwards;
+}
+@keyframes revealRing{
+    0%{transform:scale(.3);opacity:.95}
+    100%{transform:scale(3.4);opacity:0}
+}
+.reveal-fx-piece{
+    position:absolute;
+    left:0;top:0;
+    border-radius:50%;
+    opacity:0;
+    animation:revealBurst ease-out forwards;
+}
+@keyframes revealBurst{
+    0%{transform:translate(0,0) scale(.3);opacity:0}
+    16%{opacity:1}
+    100%{transform:translate(var(--dx),var(--dy)) scale(1);opacity:0}
+}
+
+/* Кровавая ночь — брызги крови */
+.reveal-fx-blood .reveal-fx-piece{
+    background:radial-gradient(circle,#ff5d6a,#8f0f1c 70%);
+    box-shadow:0 0 8px rgba(255,60,70,.8);
+    border-radius:2px 2px 8px 8px;
+}
+
+/* Записка смерти — фиолетовый дым/искры вверх */
+.reveal-fx-note .reveal-fx-piece{
+    background:radial-gradient(circle,#d8b3ff,#7c2fd8 70%);
+    box-shadow:0 0 10px rgba(190,120,255,.75);
+    filter:blur(.2px);
+}
+
+/* Дуров — разлетающиеся бумажные самолётики */
+.reveal-fx-durov .reveal-fx-piece{
+    font-weight:900;
+    text-shadow:0 0 8px rgba(94,200,255,.85);
+}
+
+/* Lux — золотые блёстки */
+.reveal-fx-lux .reveal-fx-piece{
+    background:#fff6d8;
+    box-shadow:0 0 12px 2px rgba(255,225,120,.9);
+}
+
+/* Dota Case — огненные искры */
+.reveal-fx-dota .reveal-fx-piece{
+    background:radial-gradient(circle,#ffcf8a,#ff5a10 70%);
+    box-shadow:0 0 10px rgba(255,110,20,.85);
+}
+
+
+/* =========================================================
+   CASE-SPECIFIC PREMIUM HOVER GLOWS
+   ========================================================= */
+
+.cases .case{
+    position:relative;
+    isolation:isolate;
+    overflow:visible;
+    --case-glow: rgba(255,255,255,.28);
+    --case-glow-strong: rgba(255,255,255,.55);
+    --case-tint: rgba(255,255,255,.08);
+    transition:
+        transform .38s cubic-bezier(.2,.8,.2,1),
+        box-shadow .38s ease,
+        border-color .38s ease,
+        filter .38s ease;
+}
+
+.cases .case::before{
+    content:"";
+    position:absolute;
+    inset:-2px;
+    border-radius:inherit;
+    z-index:-2;
+    opacity:0;
+    background:radial-gradient(circle at 50% 45%,
+        var(--case-glow-strong) 0%,
+        var(--case-glow) 24%,
+        transparent 68%);
+    filter:blur(16px);
+    transform:scale(.82);
+    transition:opacity .4s ease, transform .5s cubic-bezier(.2,.8,.2,1);
+    pointer-events:none;
+}
+
+.cases .case::after{
+    content:"";
+    position:absolute;
+    inset:1px;
+    border-radius:inherit;
+    z-index:-1;
+    opacity:0;
+    background:linear-gradient(135deg,
+        var(--case-tint),
+        transparent 45%,
+        var(--case-glow));
+    transition:opacity .35s ease;
+    pointer-events:none;
+}
+
+.cases .case:hover{
+    transform:translateY(-8px) scale(1.025);
+    border-color:var(--case-glow-strong);
+    box-shadow:
+        0 16px 38px rgba(0,0,0,.34),
+        0 0 22px var(--case-glow),
+        0 0 55px color-mix(in srgb, var(--case-glow-strong) 45%, transparent);
+    filter:saturate(1.12);
+}
+
+.cases .case:hover::before{
+    opacity:1;
+    transform:scale(1.08);
+    animation:caseGlowBreath 1.7s ease-in-out infinite;
+    filter:blur(16px);
+}
+
+.cases .case:hover::after{
+    opacity:1;
+}
+
+.cases .case-image{
+    position:relative;
+    transition:transform .45s cubic-bezier(.2,.8,.2,1), filter .45s ease;
+}
+
+.cases .case:hover .case-image{
+    transform:translateY(-3px) scale(1.045);
+    filter:
+        drop-shadow(0 0 8px var(--case-glow-strong))
+        drop-shadow(0 0 20px var(--case-glow));
+}
+
+.cases .case-name{
+    transition:color .35s ease, text-shadow .35s ease;
+}
+
+.cases .case:hover .case-name{
+    color:#fff;
+    text-shadow:0 0 12px var(--case-glow-strong);
+}
+
+@keyframes caseGlowBreath{
+    0%,100%{opacity:.72;transform:scale(1.04)}
+    50%{opacity:1;transform:scale(1.12)}
+}
+
+/* Кровавая ночь — багровое пламя */
+.cases .case:nth-child(1){
+    --case-glow:rgba(255,45,70,.34);
+    --case-glow-strong:rgba(255,70,85,.82);
+    --case-tint:rgba(190,20,40,.12);
+}
+.cases .case:nth-child(1):hover .case-image{
+    animation:bloodCasePulse 1.15s ease-in-out infinite;
+}
+@keyframes bloodCasePulse{
+    0%,100%{filter:drop-shadow(0 0 7px rgba(255,50,70,.65)) drop-shadow(0 0 17px rgba(255,20,45,.38))}
+    50%{filter:drop-shadow(0 0 13px rgba(255,75,90,.95)) drop-shadow(0 0 31px rgba(255,20,45,.65))}
+}
+
+/* Записка смерти — фиолетовая магическая аура */
+.cases .case:nth-child(2){
+    --case-glow:rgba(170,85,255,.34);
+    --case-glow-strong:rgba(195,105,255,.82);
+    --case-tint:rgba(130,45,210,.13);
+}
+.cases .case:nth-child(2):hover .case-image{
+    animation:deathNoteFloat 1.55s ease-in-out infinite;
+}
+@keyframes deathNoteFloat{
+    0%,100%{transform:translateY(-3px) scale(1.04) rotate(-.6deg)}
+    50%{transform:translateY(-6px) scale(1.07) rotate(.6deg)}
+}
+
+/* Дуров — холодное Telegram-синее свечение */
+.cases .case:nth-child(3){
+    --case-glow:rgba(40,175,255,.34);
+    --case-glow-strong:rgba(75,195,255,.86);
+    --case-tint:rgba(20,125,220,.13);
+}
+.cases .case:nth-child(3):hover .case-image{
+    animation:durovOrbit 1.8s ease-in-out infinite;
+}
+@keyframes durovOrbit{
+    0%,100%{transform:translateY(-3px) scale(1.045) rotate(0deg)}
+    50%{transform:translateY(-5px) scale(1.075) rotate(.8deg)}
+}
+
+/* Lux — золотой премиальный блеск */
+.cases .case:nth-child(4){
+    --case-glow:rgba(255,190,55,.36);
+    --case-glow-strong:rgba(255,215,90,.9);
+    --case-tint:rgba(255,175,35,.13);
+}
+.cases .case:nth-child(4):hover .case-image{
+    animation:luxShine 1.35s ease-in-out infinite;
+}
+@keyframes luxShine{
+    0%,100%{transform:translateY(-3px) scale(1.045);filter:brightness(1.05) drop-shadow(0 0 9px rgba(255,210,75,.7)) drop-shadow(0 0 21px rgba(255,165,25,.4))}
+    50%{transform:translateY(-5px) scale(1.075);filter:brightness(1.18) drop-shadow(0 0 15px rgba(255,230,110,1)) drop-shadow(0 0 34px rgba(255,170,30,.68))}
+}
+
+/* Dota Case — огненное красно-оранжевое свечение */
+.cases .case:nth-child(5){
+    --case-glow:rgba(255,75,20,.38);
+    --case-glow-strong:rgba(255,125,35,.95);
+    --case-tint:rgba(210,45,15,.15);
+}
+.cases .case:nth-child(5):hover .case-image{
+    animation:dotaFireCase 1s ease-in-out infinite;
+}
+@keyframes dotaFireCase{
+    0%,100%{
+        transform:translateY(-3px) scale(1.045);
+        filter:brightness(1.06) drop-shadow(0 0 8px rgba(255,70,15,.72)) drop-shadow(0 0 22px rgba(255,120,20,.48));
+    }
+    50%{
+        transform:translateY(-7px) scale(1.085);
+        filter:brightness(1.2) drop-shadow(0 0 15px rgba(255,95,20,1)) drop-shadow(0 0 38px rgba(255,55,10,.72));
+    }
+}
+
+/* Мягкие искры поверх карточки при наведении */
+.cases .case:hover .case-info .price{
+    text-shadow:0 0 10px var(--case-glow-strong);
+}
+
+/* =========================================================
+   УНИКАЛЬНЫЕ ЧАСТИЦЫ ДЛЯ КАЖДОГО ПЛАТНОГО КЕЙСА
+   (у бесплатного кейса эффектов нет)
+   ========================================================= */
+.case-fx{
+    position:absolute;
+    inset:0;
+    z-index:2;
+    pointer-events:none;
+    overflow:hidden;
+    border-radius:inherit;
+}
+.case-fx i{
+    position:absolute;
+    display:block;
+    opacity:0;
+    border-radius:50%;
+}
+
+/* Кровавая ночь — падающие капли */
+.fx-blood i{
+    width:3px;height:12px;border-radius:2px;
+    background:linear-gradient(180deg,rgba(255,60,70,.9),rgba(255,60,70,0));
+    top:-14px;
+    filter:drop-shadow(0 0 4px rgba(255,40,60,.7));
+}
+.fx-blood i:nth-child(1){left:22%;animation:fxDrip 2.3s ease-in .1s infinite}
+.fx-blood i:nth-child(2){left:55%;animation:fxDrip 2.6s ease-in .8s infinite}
+.fx-blood i:nth-child(3){left:78%;animation:fxDrip 2.1s ease-in 1.4s infinite}
+.case:hover .fx-blood i{animation-play-state:running}
+.fx-blood i{animation-play-state:paused}
+@keyframes fxDrip{
+    0%{transform:translateY(0);opacity:0}
+    12%{opacity:.9}
+    85%{opacity:.5}
+    100%{transform:translateY(165px);opacity:0}
+}
+
+/* Записка смерти — дрейфующие фиолетовые искры/пепел */
+.fx-note i{
+    width:4px;height:4px;
+    background:radial-gradient(circle,rgba(190,120,255,.95),transparent 70%);
+    bottom:-6px;
+    box-shadow:0 0 8px rgba(180,110,255,.8);
+}
+.fx-note i:nth-child(1){left:18%;animation:fxFloatUp 3.4s ease-in-out .1s infinite}
+.fx-note i:nth-child(2){left:50%;animation:fxFloatUp 4s ease-in-out .9s infinite}
+.fx-note i:nth-child(3){left:76%;animation:fxFloatUp 3.1s ease-in-out 1.7s infinite}
+.fx-note i{animation-play-state:paused}
+.case:hover .fx-note i{animation-play-state:running}
+@keyframes fxFloatUp{
+    0%{transform:translate(0,0) scale(.6);opacity:0}
+    15%{opacity:1}
+    100%{transform:translate(12px,-160px) scale(1.3);opacity:0}
+}
+
+/* Дуров кейс — орбитальные бумажные самолётики Telegram */
+.fx-durov{
+    perspective:300px;
+}
+.fx-durov i{
+    width:9px;height:9px;
+    left:50%;top:50%;
+    margin:-5px 0 0 -5px;
+    background:none;
+    border-radius:0;
+    opacity:0;
+}
+.fx-durov i::before{
+    content:"➤";
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+    color:#f5d34f;
+    text-shadow:0 0 8px rgba(245,211,79,.85);
+}
+.fx-durov i:nth-child(1){animation:fxOrbit 3.2s linear infinite}
+.fx-durov i:nth-child(2){animation:fxOrbit 3.2s linear -1.06s infinite}
+.fx-durov i:nth-child(3){animation:fxOrbit 3.2s linear -2.13s infinite}
+.fx-durov i{animation-play-state:paused}
+.case:hover .fx-durov i{animation-play-state:running}
+@keyframes fxOrbit{
+    0%{transform:rotate(0deg) translateX(58px) rotate(0deg);opacity:0}
+    8%{opacity:1}
+    92%{opacity:1}
+    100%{transform:rotate(360deg) translateX(58px) rotate(-360deg);opacity:0}
+}
+
+/* Lux NFT — золотой блеск/сияющие частицы */
+.fx-lux i{
+    width:3px;height:3px;
+    background:#fff6d8;
+    box-shadow:0 0 6px 1px rgba(255,230,140,.9);
+}
+.fx-lux i:nth-child(1){left:20%;top:70%;animation:fxTwinkle 1.6s ease-in-out .1s infinite}
+.fx-lux i:nth-child(2){left:45%;top:30%;animation:fxTwinkle 1.9s ease-in-out .5s infinite}
+.fx-lux i:nth-child(3){left:68%;top:60%;animation:fxTwinkle 1.4s ease-in-out .9s infinite}
+.fx-lux i:nth-child(4){left:82%;top:25%;animation:fxTwinkle 2.1s ease-in-out 1.3s infinite}
+.fx-lux i{animation-play-state:paused}
+.case:hover .fx-lux i{animation-play-state:running}
+@keyframes fxTwinkle{
+    0%,100%{transform:scale(.4);opacity:0}
+    50%{transform:scale(1.8);opacity:1}
+}
+
+/* Dota Case — поднимающиеся тлеющие угли */
+.fx-dota i{
+    width:4px;height:4px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(255,190,90,1),rgba(255,70,10,.5) 70%,transparent);
+    bottom:-6px;
+    box-shadow:0 0 8px rgba(255,110,20,.85);
+}
+.fx-dota i:nth-child(1){left:25%;animation:fxEmber 1.8s ease-in .1s infinite}
+.fx-dota i:nth-child(2){left:52%;animation:fxEmber 2.2s ease-in .6s infinite}
+.fx-dota i:nth-child(3){left:74%;animation:fxEmber 1.5s ease-in 1.1s infinite}
+.fx-dota i{animation-play-state:paused}
+.case:hover .fx-dota i{animation-play-state:running}
+@keyframes fxEmber{
+    0%{transform:translate(0,0) scale(.8);opacity:0}
+    15%{opacity:1}
+    100%{transform:translate(var(--x,8px),-150px) scale(.3);opacity:0}
+}
+.fx-dota i:nth-child(2){--x:-10px}
+.fx-dota i:nth-child(3){--x:6px}
+
+.free-cases{
+    grid-template-columns:repeat(4,1fr);
+    margin-bottom:26px;
+}
+
+.free-case:hover,
+.cases .free-case:hover{
+    transform:none;
+    border-color:var(--line);
+    box-shadow:none;
+    filter:none;
+}
+
+.free-case:hover::before,
+.free-case:hover::after{
+    opacity:0;
+    animation:none;
+}
+
+.free-case:hover .case-image{
+    transform:none;
+    filter:none;
+    animation:none;
+}
+
+.free-case:hover .case-name{
+    color:inherit;
+    text-shadow:none;
+}
+
+.free-case:hover .case-info .price,
+.cases .free-case:hover .case-info .price{
+    text-shadow:none !important;
+}
+
+.free-case-image{
+    font-size:70px;
+}
+
+.profile-content-block{
+    margin-top:28px;
+}
+
+@media(max-width:760px){
+    .free-cases{
+        grid-template-columns:1fr;
+    }
+}
+
+/* Бесплатный кейс — полностью без цветного свечения */
+.cases.free-cases .free-case{
+    --case-glow:transparent !important;
+    --case-glow-strong:transparent !important;
+    --case-tint:transparent !important;
+}
+
+.cases.free-cases .free-case:hover,
+.cases.free-cases .free-case:hover::before,
+.cases.free-cases .free-case:hover::after,
+.cases.free-cases .free-case:hover .case-image,
+.cases.free-cases .free-case:hover .case-name,
+.cases.free-cases .free-case:hover .case-info .price{
+    box-shadow:none !important;
+    filter:none !important;
+    text-shadow:none !important;
+    animation:none !important;
+}
+
+/* На устройствах без hover не оставляем лишние анимации */
+@media (hover:none){
+    .cases .case:hover,
+    .cases .case:hover .case-image{
+        animation:none;
+        transform:none;
+        filter:none;
+    }
+}
+
+
+/* MiniApp anti-select polish */
+html, body {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+img {
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+button, a, .case, .nft-card, .item-card {
+    -webkit-tap-highlight-color: transparent;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="ambient-glow g1"></div>
+<div class="ambient-glow g2"></div>
+
+<div class="app">
+
+<!-- HEADER -->
+
+<header class="header">
+
+    <div class="brand">
+        <div class="logo"><span>✦</span></div>
+
+        <div>
+            <div class="brand-name">TokenLux</div>
+            <div class="brand-sub">BETA</div>
+        </div>
+    </div>
+
+    <div class="balance">
+        <div class="balance-box">
+            ⭐ <span id="balance">0</span>
+        </div>
+
+</header>
+
+
+<div class="content">
+
+<!-- HOME -->
+
+<section id="home" class="page active">
+
+    <div class="hero">
+
+        <div class="hero-tag">
+            ✦ NFT DROP
+        </div>
+
+        <h1>
+            Открывай кейсы.<br>
+            Собирай NFT.
+        </h1>
+
+        <p>
+            Бесплатная коллекция виртуальных предметов.
+            Открывай сколько угодно — здесь нет реальных ставок.
+        </p>
+
+        <button class="hero-btn" onclick="openCasePage()">
+            Открыть кейс →
+        </button>
+
+    </div>
+
+
+    <div class="section-head free-cases-head">
+        <h2>Бесплатные кейсы</h2>
+    </div>
+
+    <div class="cases free-cases">
+        <div class="case free-case" onclick="selectCase('Бесплатный кейс')">
+                <div class="case-image">
+                <img src="freecase.png" alt="Free Case" onerror="this.style.display='none';this.parentElement.textContent='🎁'">
+            </div> 
+            <div class="case-info">
+                <span>7 предметов</span>
+                <span class="price">⭐ 0</span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="section-head">
+        <h2>Платные кейсы</h2>
+    </div>
+
+
+    <div class="cases">
+
+        <div class="case" onclick="selectCase('Кровавая ночь')">
+            <span class="case-fx fx-blood"><i></i><i></i><i></i></span>
+            <div class="case-image">
+                <img src="BloodNight.png" alt="Кровавая ночь" onerror="this.style.display='none';this.parentElement.textContent='📦'">
+            </div>
+
+            <div class="case-name">
+                Кровавая ночь
+            </div>
+
+            <div class="case-info">
+                <span>4 предмета</span>
+                <span class="price">⭐ 100</span>
+            </div>
+        </div>
+
+
+        <div class="case" onclick="selectCase('Записка смерти')">
+            <span class="case-fx fx-note"><i></i><i></i><i></i></span>
+            <div class="case-image">
+                <img src="note.png" alt="Записка смерти" onerror="this.style.display='none';this.parentElement.textContent='💜'">
+            </div>
+
+            <div class="case-name">
+                Записка смерти
+            </div>
+
+            <div class="case-info">
+                <span>8 предметов</span>
+                <span class="price">⭐ 500</span>
+            </div>
+        </div>
+
+
+        <div class="case" onclick="selectCase('Дуров')">
+            <span class="case-fx fx-durov"><i></i><i></i><i></i></span>
+            <div class="case-image">
+                <img src="durov.png" alt="Дуров кейс" onerror="this.style.display='none';this.parentElement.textContent='🌌'">
+            </div>
+
+            <div class="case-name">
+                Дуров кейс
+            </div>
+
+            <div class="case-info">
+                <span>5 предметов</span>
+                <span class="price">⭐ 1000</span>
+            </div>
+        </div>
+
+
+        <div class="case" onclick="selectCase('Lux')">
+            <span class="case-fx fx-lux"><i></i><i></i><i></i><i></i></span>
+            <div class="case-image">
+                <img src="Lux.png" alt="Lux NFT" onerror="this.style.display='none';this.parentElement.textContent='🍀'">
+            </div>
+
+            <div class="case-name">
+                Lux NFT
+            </div>
+
+            <div class="case-info">
+                <span>8 предметов</span>
+                <span class="price">⭐ 2.000</span>
+            </div>
+        </div>
+
+        <div class="case" onclick="selectCase('Dota Case')">
+            <span class="case-fx fx-dota"><i></i><i></i><i></i></span>
+            <div class="case-image">
+                <img src="dota2.png" alt="Dota Case" onerror="this.style.display='none';this.parentElement.textContent='⚔️'">
+            </div>
+            <div class="case-name">Dota Case</div>
+            <div class="case-info">
+                <span>4 предмета</span>
+                <span class="price">⭐ 5.000</span>
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- CASE -->
+
+<section id="case" class="page">
+
+    <div class="section-head">
+        <h2 id="caseTitle">Кровавая ночь</h2>
+        <span>За ⭐</span>
+    </div>
+
+    <div class="case-open">
+
+        <div class="case-big" id="caseEmoji">
+            📦
+        </div>
+
+        <h2 id="openTitle">
+            Кровавая ночь кейс
+        </h2>
+
+        <p>
+            Возможные предметы определяются системой выпадения.
+        </p>
+
+        <div class="roulette-wrap">
+            <div class="roulette-title">✦ РУЛЕТКА ВЫПАДЕНИЯ</div>
+            <div class="roulette-window" id="rouletteWindow">
+                <div class="roulette-pointer"></div>
+                <div class="roulette-track" id="rouletteTrack"></div>
+            </div>
+            <div class="roulette-status" id="rouletteStatus">
+                Нажми «ОТКРЫТЬ» — рулетка начнёт вращаться
+            </div>
+        </div>
+
+        <div class="drop-info">
+            <div class="drop-info-head">
+                <h3>Что можно получить</h3>
+                <span class="drop-info-count" id="dropCount"></span>
+            </div>
+            <div class="drop-list" id="dropList"></div>
+        </div>
+
+        <button
+            class="open-btn"
+            id="openButton"
+            onclick="openRandomNFT()"
+        >
+            ОТКРЫТЬ ЗА ⭐ 100
+        </button>
+
+        <p id="openResult">
+            Продавай NFT и возвращай ⭐
+        </p>
+
+    </div>
+
+</section>
+
+
+
+
+
+
+
+
+<!-- PROFILE -->
+
+<section id="profile" class="page">
+
+    <div class="profile">
+
+        <div class="avatar telegram-avatar" id="profileAvatar">
+            <span id="profileAvatarFallback">👤</span>
+            <img id="profileAvatarImage" alt="Аватар пользователя" style="display:none">
+        </div>
+
+        <h2>Игрок</h2>
+
+        <div class="title-row">
+            <span id="profileTitle" class="player-title newcomer">Новичок</span>
+            <button class="title-help" type="button" onclick="openTitlesModal()" aria-label="Все титулы">?</button>
+        </div>
+
+        <div class="stats">
+
+            <div class="stat">
+                <strong id="spinStat">0</strong>
+                <span>Открытий</span>
+            </div>
+
+            <div class="stat">
+                <strong id="nftStat">0</strong>
+                <span>NFT в коллекции</span>
+            </div>
+
+            <div class="stat">
+                <strong id="spentStarsStat">0</strong>
+                <span>Потрачено звезд⭐</span>
+            </div>
+
+        </div>
+
+        <div class="profile-content-block profile-catalog-block">
+            <button class="profile-menu-btn" type="button" onclick="toggleNFTCatalog(this)">
+                <span class="profile-menu-icon">💎</span>
+                <span class="profile-menu-text">
+                    <strong>Редкости и цены NFT</strong>
+                    <small>Посмотреть подарки по редкости и их прайс</small>
+                </span>
+                <span class="profile-menu-arrow">›</span>
+            </button>
+
+            <div id="nftCatalogPanel" class="nft-catalog-panel">
+                <div class="section-head nft-section-head">
+                    <div>
+                        <h2>💎 Редкости подарков</h2>
+                        <p class="nft-catalog-sub">Все NFT по категориям редкости и стоимости</p>
+                    </div>
+                    <span id="nftCatalogCount">0 NFT</span>
+                </div>
+
+                <div id="nftCatalogGrouped" class="nft-catalog-grouped"></div>
+            </div>
+        </div>
+
+        <div class="profile-content-block">
+<div class="section-head">
+        <h2>Инвентарь</h2>
+        <span id="itemCount">0 NFT в коллекции</span>
+    </div>
+
+    <div class="inventory-top">
+        <button class="filter active">Все</button>
+    </div>
+
+    <div class="inventory" id="inventoryGrid">
+
+        <div class="nft">
+            <div class="nft-img">
+                <span style="font-size:12px;color:#777">Пока пусто</span>
+            </div>
+            <div class="nft-name">Рюкзак пуст</div>
+            <div class="nft-price">
+                Открой первый кейс
+            </div>
+        </div>
+
+    </div>
+        </div>
+
+    </div>
+
+</section>
+
+</div>
+
+<div class="titles-modal" id="titlesModal" aria-hidden="true">
+    <div class="titles-modal-backdrop" onclick="closeTitlesModal()"></div>
+    <div class="titles-modal-card" role="dialog" aria-modal="true" aria-labelledby="titlesModalTitle">
+        <div class="titles-modal-head">
+            <div>
+                <h2 id="titlesModalTitle">Титулы</h2>
+                <p>Трать звёзды на кейсы и открывай новые уровни.</p>
+            </div>
+            <button type="button" class="titles-close" onclick="closeTitlesModal()">×</button>
+        </div>
+        <div class="titles-list">
+            <div class="title-item unlocked" data-title-threshold="0"><span class="title-dot newcomer"></span><div><strong>Новичок</strong><small>Стандартный титул</small></div><span class="title-status">✓</span></div>
+            <div class="title-item" data-title-threshold="5000"><span class="title-dot holder"></span><div><strong>Холдер</strong><small>Потратить 5 000 ⭐</small></div></div>
+            <div class="title-item" data-title-threshold="10000"><span class="title-dot experienced"></span><div><strong>Опытный</strong><small>Потратить 10 000 ⭐</small></div></div>
+            <div class="title-item" data-title-threshold="50000"><span class="title-dot collector"></span><div><strong>Коллекционер</strong><small>Потратить 50 000 ⭐</small></div></div>
+            <div class="title-item" data-title-threshold="100000"><span class="title-dot investor"></span><div><strong>Инвестор</strong><small>Потратить 100 000 ⭐</small></div></div>
+            <div class="title-item" data-title-threshold="500000"><span class="title-dot trader"></span><div><strong>Трейдер</strong><small>Потратить 500 000 ⭐</small></div></div>
+            <div class="title-item" data-title-threshold="1000000"><span class="title-dot durov"></span><div><strong>Дуров</strong><small>Потратить 1 000 000 ⭐</small></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- NAV -->
+
+<nav class="nav">
+
+    <div class="nav-inner">
+
+        <button
+            class="active"
+            onclick="showPage('home',this)"
+        >
+            <div>⌂</div>
+            Главная
+        </button>
+
+        <button
+            onclick="showPage('profile',this)"
+        >
+            <div>👤</div>
+            Профиль
+        </button>
+
+    </div>
+
+</nav>
+
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+
+/* =========================
+   DATA
+========================= */
+
+/*
+ * =========================================================
+ * НАСТРОЙКА NFT-ДРОПОВ
+ * =========================================================
+ *
+ * Здесь ты задаёшь ВСЁ:
+ * name   = название NFT
+ * image  = путь к PNG
+ * rarity = редкость
+ * chance = шанс выпадения в процентах
+ *
+ * ВАЖНО:
+ * Сумма chance внутри одного кейса должна быть 100.
+ *
+ * Пример:
+ * chance: 70  -> 70%
+ * chance: 20  -> 20%
+ * chance: 9   -> 9%
+ * chance: 1   -> 1%
+ *
+ * PNG клади в папку nft рядом с HTML.
+ * =========================================================
+ */
+
+const caseDrops = {
+
+    "Кровавая ночь": [
+        {
+            name: "Succubus",
+            image: "nft/Succubus.png",
+            rarity: "Common",
+            chance: 70
+        },
+        {
+            name: "Crimson Veil",
+            image: "nft/Crimson Veil.png",
+            rarity: "Common",
+            chance: 70
+        },
+        {
+            name: "Dracula",
+            image: "nft/Dracula.png",
+            rarity: "RARE",
+            chance: 20
+        },
+        {
+            name: "Joker",
+            image: "nft/Joker.png",
+            rarity: "RARE",
+            chance: 20
+        },
+        {
+            name: "Barbed",
+            image: "nft/Barbed.png",
+            rarity: "EPIC",
+            chance: 9
+        },
+        {
+            name: "Snake Ruby",
+            image: "nft/Snake Ruby.png",
+            rarity: "EPIC",
+            chance: 9
+        },
+        {
+            name: "Impeached",
+            image: "nft/PeachRed.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        },
+        {
+            name: "Chicago Bulls",
+            image: "nft/Chicago Bulls.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        }
+    ],
+
+    "Записка смерти": [
+        {
+            name: "L doog",
+            image: "nft/L doog.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+         {
+            name: "Incubus",
+            image: "nft/Incubus.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+         {
+            name: "Wanna Play",
+            image: "nft/Wanna Play.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+        {
+            name: "Missionary",
+            image: "nft/Missionary.png",
+            rarity: "RARE",
+            chance: 20
+        },
+        {
+            name: "Redo 999",
+            image: "nft/DeathRedo.png",
+            rarity: "EPIC",
+            chance: 9
+        },
+        {
+            name: "Monstrous",
+            image: "nft/Monstrous.png",
+            rarity: "EPIC",
+            chance: 9
+        },
+        {
+            name: "Death Note",
+            image: "nft/Death Note.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        },
+        {
+            name: "Dark Soul",
+            image: "nft/Dark Soul.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        }
+    ],
+
+    "Дуров": [
+        {
+            name: "Foundation",
+            image: "nft/Foundation.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+                {
+            name: "The Founder",
+            image: "nft/The Founder.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+        {
+            name: "Durovs Coat",
+            image: "nft/Durovs Coat.png",
+            rarity: "RARE",
+            chance: 20
+        },
+        {
+            name: "Durovs Figurine",
+            image: "nft/Durovs Figurine.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        },
+        {
+            name: "DurovGlasses",
+            image: "nft/DurovGlasses.png",
+            rarity: "Epic",
+            chance: 9
+        }
+    ],
+
+    "Lux": [
+        {
+            name: "Contour",
+            image: "nft/Contour.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+        {
+            name: "Zap Core",
+            image: "nft/Zap Core.png",
+            rarity: "RARE",
+            chance: 20
+        },
+        {
+            name: "Golden Elixir",
+            image: "nft/Golden Elixir.png",
+            rarity: "EPIC",
+            chance: 9
+        },
+        {
+            name: "Gucci Leap",
+            image: "nft/Gucci Leap.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        }
+    ],
+
+    "Dota Case": [
+        {
+            name: "Aegis",
+            image: "nft/Aegis.png",
+            rarity: "COMMON",
+            chance: 70
+        },
+        {
+            name: "Roshan",
+            image: "nft/Roshan.png",
+            rarity: "EPIC",
+            chance: 9
+        },
+        {
+            name: "Shadow Fiend",
+            image: "nft/Shadow Fiend.png",
+            rarity: "LEGENDARY",
+            chance: 1
+        },
+                {
+            name: "Marci",
+            image: "nft/Marci.png",
+            rarity: "???",
+            chance: 0.1
+        }
+    ],
+
+    "Бесплатный кейс": [
+        { name: "santahat", image: "nft/santahat.png", rarity: "COMMON", chance: 70 },
+        { name: "mask", image: "nft/mask.png", rarity: "COMMON", chance: 70 },
+        { name: "spiced wine", image: "nft/spicedwine.png", rarity: "COMMON", chance: 70 },
+        { name: "cigar", image: "nft/cigar.png", rarity: "COMMON", chance: 70 },
+        { name: "1 may", image: "nft/1may.png", rarity: "RARE", chance: 20 },
+        { name: "Diamond Ring", image: "nft/diamondring.png", rarity: "EPIC", chance: 9 },
+        { name: "shard", image: "nft/shard.png", rarity: "LEGENDARY", chance: 1 }
+    ]
+
+};
+
+/* Общий список — используется статистикой/совместимостью */
+
+/*
+ * =========================================================
+ * ЦЕНЫ NFT
+ * =========================================================
+ * Укажи стоимость здесь:
+ * "Название NFT": "⭐ 500"
+ * Если цену ещё не указал — оставь "—".
+ */
+const nftPrices = {
+    // === Кровавая ночь (кейс 100) ===
+    "Succubus": "30⭐",         // COMMON, 70%
+    "Crimson Veil": "30⭐",     // COMMON, 70%
+    "Barbed": "300⭐",          // EPIC, 9%
+    "Impeached": "2.000⭐",      // LEG, 1%
+
+
+    // === Записка смерти (кейс 500) ===
+    "Incubus": "120⭐",     // COMMON, 70%
+    "Wanna Play": "120⭐",     // COMMON, 70%
+    "L doog": "120⭐",          // COMMON, 70%
+    "Missionary": "400⭐",      // RARE, 20%
+    "Redo 999": "1.200⭐",       // EPIC, 9%
+    "Monstrous": "1.400⭐",      // EPIC, 9%
+    "Death Note": "8.000⭐",     // LEG, 1%
+    "Dark Soul": "8.000⭐",      // LEG, 1%
+    
+
+    // === Дуров кейс (кейс 1000) ===
+    "Foundation": "200⭐",      // COMMON, 70%
+    "The Founder": "200⭐",     // COMMON, 70%
+    "Durovs Coat": "700⭐",     // RARE, 20%
+    "DurovGlasses": "2.000⭐",   // EPIC, 9%
+    "Durovs Figurine": "15.000⭐", // LEG, 1%
+
+    // === Люкс (кейс 2000) ===
+    "Contour": "600⭐",         // COMMON, 70%
+    "Zap Core": "2.000⭐",       // RARE, 20%
+    "Golden Elixir": "6.000⭐",  // EPIC, 9%
+    "Gucci Leap": "40.000⭐",    // LEG, 1% (добавил, т.к. был в рулетке)
+
+    // === Дота 2 (кейс 5000) ===
+    "Aegis": "1.800⭐",          // COMMON, 70%
+    "Roshan": "12.000⭐",        // EPIC, 9%
+    "Shadow Fiend": "100.000⭐", // LEG, 1%
+    "Marci": "999.999⭐",         // SPECIAL, 0.1% (добавил из твоего скрина)
+
+        // === Бесплатный кейс ===
+    "santahat": "5",
+    "mask": "5",
+    "spiced wine": "5",
+    "cigar": "5",
+    "1 may": "30",
+    "Diamond Ring": "150",
+    "shard": "500"
+};
+
+
+const nftItems = Object.values(caseDrops).flat();
+
+const casePrices = {
+    "Кровавая ночь": 100,
+    "Записка смерти": 500,
+    "Дуров": 1000,
+    "Lux": 2000,
+    "Dota Case": 5000,
+    "Бесплатный кейс": 0
+};
+
+function parseStarPrice(value){
+    if (typeof value === "number") return value;
+    const cleaned = String(value ?? "")
+        .replace(/⭐/g, "")
+        .replace(/\s/g, "")
+        .replace(/\./g, "")
+        .replace(/,/g, ".");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function formatStars(value){
+    return Math.max(0, Math.floor(value)).toLocaleString("ru-RU").replace(/,/g, ".");
+}
+
+let balance = 100;
+let inventory = [];
+let totalSpins = 0;
+let totalSpentStars = 0;
+
+function updateBalance(){
+    const el = document.getElementById("balance");
+    if(el) el.textContent = formatStars(balance);
+}
+
+function getNFTSellPrice(nft){
+    return parseStarPrice(nftPrices[nft.name]);
+}
+
+function saveGame(){
+    try{
+        localStorage.setItem("tokenlux_balance", String(balance));
+        localStorage.setItem("tokenlux_inventory", JSON.stringify(inventory));
+        localStorage.setItem("tokenlux_spins", String(totalSpins));
+        localStorage.setItem("tokenlux_spent_stars", String(totalSpentStars));
+    }catch(e){}
+}
+
+function loadGame(){
+    try{
+        const b = localStorage.getItem("tokenlux_balance");
+        const inv = localStorage.getItem("tokenlux_inventory");
+        const spins = localStorage.getItem("tokenlux_spins");
+        const spent = localStorage.getItem("tokenlux_spent_stars");
+
+        if(b !== null && Number.isFinite(Number(b))) balance = Number(b);
+        if(inv){
+            const parsed = JSON.parse(inv);
+            if(Array.isArray(parsed)) inventory = parsed;
+        }
+        if(spins !== null && Number.isFinite(Number(spins))) totalSpins = Number(spins);
+        if(spent !== null && Number.isFinite(Number(spent))) totalSpentStars = Number(spent);
+    }catch(e){}
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+function showPage(id,button){
+
+    document.querySelectorAll(".page")
+        .forEach(page => page.classList.remove("active"));
+
+    document.getElementById(id)
+        .classList.add("active");
+
+    document.querySelectorAll(".nav button")
+        .forEach(btn => btn.classList.remove("active"));
+
+    if(button){
+        button.classList.add("active");
+    }
+
+    window.scrollTo({
+        top:0,
+        behavior:"smooth"
+    });
+}
+
+
+function openCasePage(){
+
+    showPage(
+        "case",
+        null
+    );
+
+}
+
+
+/* =========================
+   CASE
+========================= */
+
+let selectedCase = "Кровавая ночь";
+
+function selectCase(name){
+
+    selectedCase = name;
+
+    const caseLabel = name === "Бесплатный кейс" ? name : name + " кейс";
+
+    document.getElementById("caseTitle")
+        .textContent = caseLabel;
+
+    document.getElementById("openTitle")
+        .textContent = caseLabel;
+
+    const openButton = document.getElementById("openButton");
+    if(openButton){
+        openButton.textContent = `ОТКРЫТЬ ЗА ⭐ ${formatStars(casePrices[name] || 0)}`;
+        openButton.disabled = false;
+    }
+
+    const emojis = {
+        "Кровавая ночь":"📦",
+        "Записка смерти":"📝",
+        "Дуров":"🌌",
+        "Lux":"🍀",
+        "Dota Case":"⚔️",
+        "Бесплатный кейс":"🎁"
+    };
+
+    const images = {
+        "Кровавая ночь":"BloodNight.png",
+        "Записка смерти":"note.png",
+        "Дуров":"Durov.png",
+        "Lux":"Lux.png",
+        "Dota Case":"dota2.png",
+        "Бесплатный кейс":"freecase.png"
+    };
+
+    const caseEmoji = document.getElementById("caseEmoji");
+    const imgName = images[name];
+    if (imgName) {
+        caseEmoji.innerHTML = `<img src="${imgName}" alt="${name} кейс" onerror="this.style.display='none';this.parentElement.textContent='${emojis[name] || '📦'}'">`;
+    } else {
+        caseEmoji.textContent = emojis[name] || "📦";
+    }
+
+    openCasePage();
+    renderDropList();
+    buildRoulette();
+}
+
+
+/* =========================
+   RANDOM NFT
+========================= */
+
+function getRandomNFT(){
+
+    const drops = caseDrops[selectedCase] || nftItems;
+
+    if (!drops.length) {
+        return null;
+    }
+
+    const totalChance = drops.reduce(
+        (sum, item) => sum + Number(item.chance || 0),
+        0
+    );
+
+    if (totalChance <= 0) {
+        return drops[Math.floor(Math.random() * drops.length)];
+    }
+
+    let roll = Math.random() * totalChance;
+
+    for (const item of drops) {
+
+        roll -= Number(item.chance || 0);
+
+        if (roll < 0) {
+            return item;
+        }
+    }
+
+    return drops[drops.length - 1];
+}
+
+
+/* =========================
+   OPEN
+========================= */
+
+let rouletteAudioContext = null;
+
+function rouletteTick(intensity=1){
+    try{
+        if(!rouletteAudioContext){
+            rouletteAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if(rouletteAudioContext.state === "suspended") rouletteAudioContext.resume();
+
+        const now = rouletteAudioContext.currentTime;
+        const osc = rouletteAudioContext.createOscillator();
+        const gain = rouletteAudioContext.createGain();
+
+        osc.type = "square";
+        osc.frequency.setValueAtTime(760 + Math.random()*80, now);
+        osc.frequency.exponentialRampToValueAtTime(520, now + .045);
+
+        gain.gain.setValueAtTime(.0001, now);
+        gain.gain.exponentialRampToValueAtTime(.035 * intensity, now + .003);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + .055);
+
+        osc.connect(gain);
+        gain.connect(rouletteAudioContext.destination);
+        osc.start(now);
+        osc.stop(now + .06);
+    }catch(e){}
+}
+
+function buildRoulette(){
+
+    const track = document.getElementById("rouletteTrack");
+    if(!track) return;
+
+    const drops = caseDrops[selectedCase] || [];
+
+    if(!drops.length){
+        track.innerHTML = "";
+        return;
+    }
+
+    const sequence = [];
+
+    for(let i=0;i<24;i++){
+        sequence.push(drops[i % drops.length]);
+    }
+
+    track.innerHTML = sequence.map(item => `
+        <div class="roulette-item">
+            ${item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.1'">` : `<div class="roulette-placeholder">⚔️</div>`}
+            <div class="roulette-item-name">${item.name}</div>
+            <div class="roulette-item-rarity">${item.rarity}</div>
+        </div>
+    `).join("");
+
+    track.style.transition = "none";
+    track.style.transform = "translateX(0px)";
+}
+
+function openRandomNFT(){
+
+    const button = document.getElementById("openButton");
+    const result = document.getElementById("openResult");
+    const status = document.getElementById("rouletteStatus");
+    const track = document.getElementById("rouletteTrack");
+    const windowEl = document.getElementById("rouletteWindow");
+    const caseBox = document.getElementById("caseEmoji");
+
+    if(button.disabled) return;
+
+    const casePrice = Number(casePrices[selectedCase] || 0);
+
+    if(balance < casePrice){
+        result.textContent = `Недостаточно звёзд. Нужно ещё ⭐ ${formatStars(casePrice - balance)}`;
+        showToast(`Не хватает ⭐ ${formatStars(casePrice - balance)}`);
+        return;
+    }
+
+    const nft = getRandomNFT();
+    if(!nft){
+        result.textContent = "В этом кейсе пока нет NFT";
+        return;
+    }
+
+    const drops = caseDrops[selectedCase] || [];
+
+    // Списываем стоимость кейса в момент открытия.
+    balance -= casePrice;
+    totalSpentStars += casePrice;
+    updateBalance();
+    saveGame();
+
+    button.disabled = true;
+    button.classList.add("is-opening");
+    button.textContent = "РУЛЕТКА КРУТИТСЯ...";
+    result.textContent = `Списано ⭐ ${formatStars(casePrice)} · определяем NFT...`;
+    status.textContent = "Удача решается прямо сейчас...";
+    caseBox.classList.remove("reveal","epic-reveal");
+    windowEl.classList.remove("epic");
+
+    const sequence = [];
+    for(let i=0;i<90;i++) sequence.push(drops[i % Math.max(drops.length,1)]);
+
+    const winnerIndex = 62 + Math.floor(Math.random()*22); // 62–83, каждый раз своя точка остановки
+    sequence[winnerIndex] = nft;
+
+    track.innerHTML = sequence.map(item => `
+        <div class="roulette-item">
+            ${item.image
+                ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.08'">`
+                : `<div class="roulette-placeholder">⚔️</div>`}
+            <div class="roulette-item-name">${item.name}</div>
+            <div class="roulette-item-rarity">${item.rarity}</div>
+        </div>
+    `).join("");
+
+    track.style.transition = "none";
+    track.style.transform = "translateX(0px)";
+
+    requestAnimationFrame(()=>{
+        const items = [...track.querySelectorAll(".roulette-item")];
+        const winner = items[winnerIndex];
+        if(!winner) return;
+
+        const center = windowEl.clientWidth / 2;
+        const winnerCenter = winner.offsetLeft + winner.offsetWidth / 2;
+        const finalX = center - winnerCenter + (Math.random()-.5)*7;
+        const itemStep = items.length > 1 ? items[1].offsetLeft - items[0].offsetLeft : 131;
+
+        let lastCrossed = 0;
+        let lastTime = performance.now();
+        const duration = 7200;
+        const t0 = performance.now();
+
+        function ease(t){
+            if(t < .10){
+                const p = t/.10;
+                return p*p*(3-2*p) * .16;
+            }
+            if(t < .55){
+                const p = (t-.10)/.45;
+                return .16 + p*.58;
+            }
+            const p = (t-.55)/.45;
+            return .74 + (1-Math.pow(1-p,4))*.26;
+        }
+
+        function frame(now){
+            const t = Math.min(1,(now-t0)/duration);
+            const x = finalX * ease(t);
+            track.style.transform = `translate3d(${x}px,0,0)`;
+
+            const crossed = Math.floor(Math.abs(x)/itemStep);
+            if(crossed > lastCrossed){
+                const passed = Math.min(crossed-lastCrossed,4);
+                const speed = Math.abs(x)/Math.max(1,now-lastTime);
+                for(let i=0;i<passed;i++) rouletteTick(Math.min(1.35,.65+speed*1.8));
+                lastCrossed = crossed;
+                lastTime = now;
+            }
+
+            if(t < 1){
+                status.textContent = t > .55 ? "⚡ Замедляемся... почти остановка!" : "🔥 Крутится... следи за указателем!";
+                requestAnimationFrame(frame);
+                return;
+            }
+
+            track.style.transform = `translate3d(${finalX}px,0,0)`;
+            winner.classList.add("winner-glow");
+            windowEl.classList.add("epic");
+            status.textContent = "✨ ПОБЕДИТЕЛЬ ОПРЕДЕЛЁН!";
+
+            setTimeout(()=>{
+                rouletteTick(1.5);
+                setTimeout(()=>rouletteTick(1.15),90);
+                setTimeout(()=>rouletteTick(.9),190);
+            },30);
+
+            totalSpins++;
+            inventory.push(nft);
+            saveGame();
+
+            setTimeout(()=>{
+                caseBox.innerHTML = "";
+
+                if(nft.image){
+                    const img = document.createElement("img");
+                    img.src = nft.image;
+                    img.alt = nft.name;
+                    img.onerror = function(){
+                        caseBox.innerHTML = '<span style="font-size:13px;color:#777">PNG не найден</span>';
+                    };
+                    caseBox.appendChild(img);
+                }else{
+                    caseBox.innerHTML = '<span style="font-size:58px">⚔️</span>';
+                }
+
+                caseBox.classList.add("reveal","epic-reveal");
+
+                spawnRevealFX(selectedCase, caseBox);
+
+                if(String(nft.rarity||"").toUpperCase() === "LEGENDARY"){
+                    spawnConfetti();
+                }
+
+                const sellPrice = getNFTSellPrice(nft);
+                result.innerHTML =
+                    `🎉 Выпал <b>${nft.name}</b> · ${nft.rarity} · можно продать за ⭐ ${formatStars(sellPrice)}`;
+
+                button.disabled = false;
+                button.classList.remove("is-opening");
+                button.textContent = `ОТКРЫТЬ ЗА ⭐ ${formatStars(casePrice)}`;
+
+                updateInventory();
+                updateStats();
+                updateBalance();
+                saveGame();
+                showToast("✨ Получен NFT: " + nft.name);
+            },180);
+        }
+
+        requestAnimationFrame(frame);
+    });
+}
+
+/* =========================
+   INVENTORY
+========================= */
+
+
+function toggleNFTCatalog(button){
+    const panel = document.getElementById("nftCatalogPanel");
+    if(!panel) return;
+    const isOpen = panel.classList.toggle("open");
+    button.classList.toggle("open", isOpen);
+}
+
+function renderNFTCatalog(){
+    const root = document.getElementById("nftCatalogGrouped");
+    const count = document.getElementById("nftCatalogCount");
+    if(!root) return;
+
+    const all = Object.entries(caseDrops).flatMap(([caseName,drops]) =>
+        drops.map(item => ({...item, caseName}))
+    );
+
+    // Убираем только полные дубликаты, исходные caseDrops/chance не меняем.
+    const unique = [];
+    const seen = new Set();
+    all.forEach(item => {
+        const key = String(item.name || "") + "|" + String(item.image || "");
+        if(!seen.has(key)){
+            seen.add(key);
+            unique.push(item);
+        }
+    });
+
+    count.textContent = unique.length + " NFT";
+
+    const order = ["COMMON", "RARE", "EPIC", "LEGENDARY"];
+    const labels = {
+        COMMON: "COMMON",
+        RARE: "RARE",
+        EPIC: "EPIC",
+        LEGENDARY: "LEGENDARY"
+    };
+
+    const normalize = rarity => String(rarity || "COMMON").trim().toUpperCase();
+    const groups = {};
+    order.forEach(r => groups[r] = []);
+    const other = [];
+
+    unique.forEach(item => {
+        const r = normalize(item.rarity);
+        if(groups[r]) groups[r].push(item);
+        else other.push(item);
+    });
+
+    let html = "";
+
+    order.forEach(rarity => {
+        if(!groups[rarity].length) return;
+        html += `
+            <section class="rarity-category">
+                <div class="rarity-category-title">
+                    <span class="rarity-title-badge ${rarity.toLowerCase()}">${labels[rarity]}</span>
+                    <span class="rarity-category-line"></span>
+                    <span class="rarity-category-count">${groups[rarity].length}</span>
+                </div>
+                <div class="nft-category-grid">
+                    ${groups[rarity].map(renderCatalogNFTCard).join("")}
+                </div>
+            </section>
+        `;
+    });
+
+    if(other.length){
+        html += `
+            <section class="rarity-category">
+                <div class="rarity-category-title">
+                    <span class="rarity-title-badge other">OTHER</span>
+                    <span class="rarity-category-line"></span>
+                    <span class="rarity-category-count">${other.length}</span>
+                </div>
+                <div class="nft-category-grid">
+                    ${other.map(renderCatalogNFTCard).join("")}
+                </div>
+            </section>
+        `;
+    }
+
+    root.innerHTML = html || '<div class="nft-empty">NFT пока нет</div>';
+}
+
+function renderCatalogNFTCard(item){
+    const rarity = normalizeCatalogRarity(item.rarity);
+    const price = nftPrices[item.name] ?? "—";
+    return `
+        <article class="catalog-nft rarity-${rarity.toLowerCase()}">
+            <div class="catalog-nft-img">
+                ${item.image
+                    ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.08'">`
+                    : `<span class="catalog-nft-placeholder">⚔️</span>`}
+            </div>
+            <div class="catalog-nft-info">
+                <div class="catalog-nft-name">${item.name}</div>
+                <div class="catalog-nft-price">${price}</div>
+            </div>
+            <div class="catalog-nft-case">${item.caseName}</div>
+        </article>
+    `;
+}
+
+function normalizeCatalogRarity(rarity){
+    return String(rarity || "COMMON").trim().toUpperCase();
+}
+
+function updateInventory(){
+
+    const grid = document.getElementById("inventoryGrid");
+    document.getElementById("itemCount").textContent = inventory.length + " NFT в коллекции";
+    grid.innerHTML = "";
+
+    if(!inventory.length){
+        grid.innerHTML = `
+            <div class="nft">
+                <div class="nft-img"><span style="font-size:12px;color:#777">Пока пусто</span></div>
+                <div class="nft-name">Инвентарь пуст</div>
+                <div class="nft-price">Открой первый кейс</div>
+            </div>`;
+        return;
+    }
+
+    inventory.slice().reverse().forEach((nft,index)=>{
+        const realIndex = inventory.length - 1 - index;
+        const card = document.createElement("div");
+        card.className = "nft";
+
+        const rarityClass = String(nft.rarity || "common").toLowerCase();
+        const sellPrice = getNFTSellPrice(nft);
+
+        card.innerHTML = `
+            <div class="rarity ${rarityClass}">${nft.rarity}</div>
+
+            <div class="nft-img has-image">
+                ${nft.image
+                    ? `<img src="${nft.image}" alt="${nft.name}" onerror="this.style.display='none'">`
+                    : `<span style="font-size:48px">⚔️</span>`}
+            </div>
+
+            <div class="nft-name">${nft.name}</div>
+
+            <div class="nft-price">
+                NFT #${inventory.length-index} · ${nft.chance}% drop
+            </div>
+
+            <button class="sell-nft-btn"
+                ${sellPrice <= 0 ? "disabled" : ""}
+                onclick="sellNFT(${realIndex})">
+                ${sellPrice > 0
+                    ? `ПРОДАТЬ · ⭐ ${formatStars(sellPrice)}`
+                    : "ЦЕНА НЕ УКАЗАНА"}
+            </button>
+        `;
+
+        grid.appendChild(card);
+    });
+}
+
+function sellNFT(index){
+
+    if(index < 0 || index >= inventory.length) return;
+
+    const nft = inventory[index];
+    const price = getNFTSellPrice(nft);
+
+    if(price <= 0){
+        showToast("У этого NFT не указана цена");
+        return;
+    }
+
+    balance += price;
+    inventory.splice(index,1);
+
+    updateBalance();
+    updateInventory();
+    updateStats();
+    saveGame();
+
+    showToast(`💰 ${nft.name} продан за ⭐ ${formatStars(price)}`);
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+function getCurrentTitle(){
+    const titles = [
+        {name:"Новичок", threshold:0, className:"newcomer"},
+        {name:"Холдер", threshold:5000, className:"holder"},
+        {name:"Опытный", threshold:10000, className:"experienced"},
+        {name:"Коллекционер", threshold:50000, className:"collector"},
+        {name:"Инвестор", threshold:100000, className:"investor"},
+        {name:"Трейдер", threshold:500000, className:"trader"},
+        {name:"Дуров", threshold:1000000, className:"durov"}
+    ];
+    return titles.reduce((current,title) => totalSpentStars >= title.threshold ? title : current, titles[0]);
+}
+
+function updateTitle(){
+    const titleEl = document.getElementById("profileTitle");
+    if(!titleEl) return;
+    const title = getCurrentTitle();
+    titleEl.textContent = title.name;
+    titleEl.className = "player-title " + title.className;
+
+    document.querySelectorAll(".title-item").forEach(item => {
+        const threshold = Number(item.dataset.titleThreshold || 0);
+        const unlocked = totalSpentStars >= threshold;
+        item.classList.toggle("unlocked", unlocked);
+        item.classList.toggle("current", threshold === title.threshold);
+        const status = item.querySelector(".title-status");
+        if(status) status.remove();
+        if(unlocked){
+            const check = document.createElement("span");
+            check.className = "title-status";
+            check.textContent = "✓";
+            item.appendChild(check);
+        }
+    });
+}
+
+function updateStats(){
+    document.getElementById("spinStat").textContent = totalSpins;
+    document.getElementById("nftStat").textContent = inventory.length;
+    const spentEl = document.getElementById("spentStarsStat");
+    if(spentEl) spentEl.textContent = formatStars(totalSpentStars);
+    updateTitle();
+}
+
+function openTitlesModal(){
+    const modal = document.getElementById("titlesModal");
+    if(!modal) return;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+    updateTitle();
+}
+
+function closeTitlesModal(){
+    const modal = document.getElementById("titlesModal");
+    if(!modal) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+}
+
+document.addEventListener("keydown", event => {
+    if(event.key === "Escape") closeTitlesModal();
+});
+
+
+/* =========================
+   TOAST
+========================= */
+
+/* Эффект при выпадении NFT — свой под цветокор каждого платного кейса */
+const revealFXThemes = {
+    "Кровавая ночь": {type:"blood", color:"#ff3b4d"},
+    "Записка смерти": {type:"note",  color:"#b56cff"},
+    "Дуров":          {type:"durov", color:"#5ec8ff"},
+    "Lux":            {type:"lux",   color:"#ffd35a"},
+    "Dota Case":      {type:"dota",  color:"#ff7a2e"}
+};
+
+function spawnRevealFX(caseName, targetEl){
+    const theme = revealFXThemes[caseName];
+    if(!theme || !targetEl) return; // бесплатный кейс и неизвестные — без эффекта
+
+    const rect = targetEl.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+
+    const layer = document.createElement("div");
+    layer.className = "reveal-fx reveal-fx-" + theme.type;
+    layer.style.left = cx + "px";
+    layer.style.top = cy + "px";
+
+    const ring = document.createElement("span");
+    ring.className = "reveal-fx-ring";
+    ring.style.color = theme.color;
+    layer.appendChild(ring);
+
+    const count = theme.type === "durov" ? 9 : 20;
+    const upward = theme.type === "note" || theme.type === "dota";
+
+    for(let i=0;i<count;i++){
+        const p = document.createElement("span");
+        p.className = "reveal-fx-piece";
+
+        const angle = Math.random()*Math.PI*2;
+        const dist = 55 + Math.random()*125;
+        const dx = Math.cos(angle)*dist;
+        const dy = Math.sin(angle)*dist - (upward ? 70 + Math.random()*40 : 0);
+        const dur = .75 + Math.random()*.6;
+        const delay = Math.random()*.12;
+        const size = 4 + Math.random()*5;
+
+        p.style.setProperty("--dx", dx + "px");
+        p.style.setProperty("--dy", dy + "px");
+        p.style.animationDuration = dur + "s";
+        p.style.animationDelay = delay + "s";
+
+        if(theme.type === "durov"){
+            p.textContent = "➤";
+            p.style.fontSize = (size + 7) + "px";
+            p.style.color = theme.color;
+        }else{
+            p.style.width = size + "px";
+            p.style.height = size + "px";
+        }
+
+        layer.appendChild(p);
+    }
+
+    document.body.appendChild(layer);
+    setTimeout(()=>layer.remove(), 1700);
+}
+
+function spawnConfetti(){
+    const colors = ["#f5d34f","#a78bfa","#22d3ee","#ff5d7a","#fff"];
+    const layer = document.createElement("div");
+    layer.className = "confetti-layer";
+    const count = 46;
+    for(let i=0;i<count;i++){
+        const p = document.createElement("span");
+        p.className = "confetti-piece";
+        const x = 50 + (Math.random()-.5)*70;
+        const drift = (Math.random()-.5)*220;
+        const rise = 60 + Math.random()*40;
+        const size = 6 + Math.random()*6;
+        const dur = 1.1 + Math.random()*.9;
+        const delay = Math.random()*.15;
+        p.style.left = x + "%";
+        p.style.width = size + "px";
+        p.style.height = size*.4 + "px";
+        p.style.background = colors[i % colors.length];
+        p.style.setProperty("--drift", drift + "px");
+        p.style.setProperty("--rise", "-" + rise + "px");
+        p.style.animationDuration = dur + "s";
+        p.style.animationDelay = delay + "s";
+        layer.appendChild(p);
+    }
+    document.body.appendChild(layer);
+    setTimeout(()=>layer.remove(),2200);
+}
+
+function showToast(text){
+
+    const toast =
+        document.getElementById("toast");
+
+    toast.textContent = text;
+
+    toast.classList.add("show");
+
+    setTimeout(()=>{
+        toast.classList.remove("show");
+    },2200);
+
+}
+
+
+/*
+ * =========================================================
+ * КАК ДОБАВИТЬ СВОЙ NFT:
+ *
+ * 1. Создай рядом с HTML папку "nft"
+ * 2. Положи туда PNG
+ * 3. В нужном кейсе в caseDrops добавь:
+ *
+ * {
+ *     name:"Мой NFT",
+ *     image:"nft/my-nft.png",
+ *     rarity:"LEGENDARY",
+ *     chance:1
+ * }
+ *
+ * chance — процент выпадения.
+ * Например 70 + 20 + 9 + 1 = 100%.
+ *
+ * PNG автоматически:
+ * - покажется при выпадении;
+ * - попадёт в рюкзак;
+ * - будет отображаться как NFT-карточка.
+ * =========================================================
+ */
+
+
+function renderDropList(){
+
+    const list = document.getElementById("dropList");
+    const countEl = document.getElementById("dropCount");
+
+    if(!list) return;
+
+    const drops = caseDrops[selectedCase] || [];
+
+    if(countEl) countEl.textContent = drops.length ? drops.length + " предметов" : "";
+
+    list.innerHTML = "";
+
+    drops.forEach(item => {
+
+        const rarityClass = String(item.rarity || "common").toLowerCase();
+
+        const card = document.createElement("div");
+        card.className = "drop-card";
+
+        card.innerHTML = `
+            <div class="drop-card-chance">${item.chance}%</div>
+
+            <div class="drop-card-img">
+                ${item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.style.opacity='.1'">` : `<div class="roulette-placeholder">⚔️</div>`}
+            </div>
+
+            <div class="drop-card-name">${item.name}</div>
+            <div class="drop-card-rarity ${rarityClass}">${item.rarity}</div>
+        `;
+
+        list.appendChild(card);
+    });
+}
+
+function validateDrops(){
+
+    Object.entries(caseDrops).forEach(([caseName, drops]) => {
+
+        const total = drops.reduce(
+            (sum, item) => sum + Number(item.chance || 0),
+            0
+        );
+
+        if (Math.abs(total - 100) > 0.0001) {
+            console.warn(
+                `В кейсе "${caseName}" сумма шансов = ${total}%. Рекомендуется 100%.`
+            );
+        }
+    });
+}
+
+const originalSelectCase = selectCase;
+
+selectCase = function(name){
+
+    originalSelectCase(name);
+    renderDropList();
+};
+
+function initTelegramProfile(){
+    try{
+        const tg = window.Telegram && window.Telegram.WebApp;
+        if(!tg) return;
+        tg.ready();
+        tg.expand();
+        const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+        if(!user) return;
+        const avatar = document.getElementById("profileAvatar");
+        const img = document.getElementById("profileAvatarImage");
+        const fallback = document.getElementById("profileAvatarFallback");
+        if(user.photo_url && img && avatar){
+            img.src = user.photo_url;
+            img.onload = () => {
+                img.style.display = "block";
+                avatar.classList.add("has-photo");
+                if(fallback) fallback.style.display = "none";
+            };
+        }
+    }catch(e){}
+}
+
+initTelegramProfile();
+loadGame();
+updateBalance();
+updateInventory();
+updateStats();
+renderDropList();
+buildRoulette();
+renderNFTCatalog();
+validateDrops();
+
+</script>
+
+
+<script>
+/* Telegram MiniApp interaction polish */
+document.addEventListener('contextmenu', function(e){
+    e.preventDefault();
+});
+
+document.addEventListener('dragstart', function(e){
+    if(e.target && e.target.tagName === 'IMG') e.preventDefault();
+});
+
+document.addEventListener('selectstart', function(e){
+    e.preventDefault();
+});
+
+/* Prevent accidental copy shortcuts, but keep inputs usable */
+document.addEventListener('keydown', function(e){
+    const tag = (e.target.tagName || '').toLowerCase();
+    if(['input','textarea'].includes(tag)) return;
+    if((e.ctrlKey || e.metaKey) && ['c','u','s','a'].includes(e.key.toLowerCase())){
+        e.preventDefault();
+    }
+});
+</script>
+
+</body>
+</html>

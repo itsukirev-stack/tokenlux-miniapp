@@ -3363,7 +3363,7 @@ body::before{
         <div class="case" onclick="selectCase('Дуров')">
             <span class="case-fx fx-durov"><i></i><i></i><i></i></span>
             <div class="case-image">
-                <img src="durov.png" alt="Дуров кейс" onerror="this.style.display='none';this.parentElement.textContent='🌌'">
+                <img src="durov.webp" alt="Дуров кейс" onerror="this.style.display='none';this.parentElement.textContent='🌌'">
             </div>
 
             <div class="case-name">
@@ -3985,10 +3985,12 @@ function getUserId() {
 
 // СОХРАНЕНИЕ (в облако + резерв в localStorage)
 // СОХРАНЕНИЕ (в облако + резерв в localStorage)
-async function saveGame() {
-    const userId = getUserId();
-    
-    // Получаем имя и аватарку из Telegram
+// Очередь сохранений: запросы идут строго по порядку и не могут
+// перезаписать более новые данные старыми.
+let saveQueue = Promise.resolve();
+let latestSaveData = null;
+
+function buildSaveData() {
     let userName = 'Игрок';
     let userAvatar = '';
     let userUsername = '';
@@ -4000,39 +4002,66 @@ async function saveGame() {
             userAvatar = tg.photo_url || '';
         }
     } catch(e) {}
-    
-    const data = {
-        balance: balance,
-        inventory: inventory,
-        totalSpins: totalSpins,
-        totalSpentStars: totalSpentStars,
-        userName: userName,      // <--- ИМЯ
-        username: userUsername,  // <--- ЮЗЕРНЕЙМ
-        avatar: userAvatar       // <--- АВАТАРКА
-    };
 
+    return {
+        balance: Math.max(0, Math.floor(Number(balance) || 0)),
+        inventory: Array.isArray(inventory) ? inventory : [],
+        totalSpins: Math.max(0, Math.floor(Number(totalSpins) || 0)),
+        totalSpentStars: Math.max(0, Math.floor(Number(totalSpentStars) || 0)),
+        userName,
+        username: userUsername,
+        avatar: userAvatar
+    };
+}
+
+function saveGame() {
+    const userId = getUserId();
+    latestSaveData = buildSaveData();
+    const data = JSON.parse(JSON.stringify(latestSaveData));
+
+    saveQueue = saveQueue.then(async () => {
+        try {
+            const response = await fetch(`https://tokenlux-api.tokenluxservice.workers.dev/saveData?userId=${encodeURIComponent(userId)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                cache: 'no-store'
+            });
+
+            if (!response.ok) throw new Error('Server error');
+
+            // Бэкап обновляем только после успешной записи в облако.
+            localStorage.setItem('tokenlux_backup', JSON.stringify(data));
+        } catch (e) {
+            // Даже при временном сбое сети последнее состояние остаётся локально.
+            localStorage.setItem('tokenlux_backup', JSON.stringify(data));
+            console.log('Saved locally (offline mode)', e);
+        }
+    }).catch(() => {});
+
+    return saveQueue;
+}
+
+// Перед закрытием/сворачиванием стараемся отправить последнее состояние.
+window.addEventListener('pagehide', () => {
     try {
-        const response = await fetch(`https://tokenlux-api.tokenluxservice.workers.dev/saveData?userId=${userId}`, {
+        const userId = getUserId();
+        const data = latestSaveData || buildSaveData();
+        fetch(`https://tokenlux-api.tokenluxservice.workers.dev/saveData?userId=${encodeURIComponent(userId)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        if (!response.ok) throw new Error('Server error');
-        
-        localStorage.setItem('tokenlux_backup', JSON.stringify(data));
-    } catch (e) {
-        localStorage.setItem('tokenlux_backup', JSON.stringify(data));
-        console.log('Saved locally (offline mode)');
-    }
-}
+            body: JSON.stringify(data),
+            keepalive: true
+        }).catch(() => {});
+    } catch(e) {}
+});
 
 // ЗАГРУЗКА (из облака или из резерва)
 async function loadGame() {
     const userId = getUserId();
 
     try {
-        const response = await fetch(`https://tokenlux-api.tokenluxservice.workers.dev/getData?userId=${userId}`);
+        const response = await fetch(`https://tokenlux-api.tokenluxservice.workers.dev/getData?userId=${encodeURIComponent(userId)}`, { cache: 'no-store' });
         
         if (!response.ok) throw new Error('Server error');
         
@@ -4292,7 +4321,7 @@ function buildRoulette(){
     track.style.transform = "translateX(0px)";
 }
 
-function openRandomNFT(){
+async function openRandomNFT(){
 
     /* AudioContext запускается непосредственно из клика.
        Поэтому звук работает и на ПК, и в мобильном Telegram/WebView. */
@@ -4323,14 +4352,17 @@ function openRandomNFT(){
 
     const drops = caseDrops[selectedCase] || [];
 
-    // Списываем стоимость кейса в момент открытия.
+    // Блокируем кнопку ДО сохранения, чтобы нельзя было отправить
+    // два открытия одновременно.
+    button.disabled = true;
+    button.classList.add("is-opening");
+
+    // Списываем стоимость кейса и сначала подтверждаем сохранение в облаке.
     balance -= casePrice;
     totalSpentStars += casePrice;
     updateBalance();
-    saveGame();
+    await saveGame();
 
-    button.disabled = true;
-    button.classList.add("is-opening");
     button.textContent = "РУЛЕТКА КРУТИТСЯ...";
     result.textContent = `Списано ⭐ ${formatStars(casePrice)} · определяем NFT...`;
     status.textContent = "Удача решается прямо сейчас...";

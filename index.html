@@ -1902,6 +1902,194 @@ button, a, .case, .nft-card, .item-card {
     -webkit-tap-highlight-color: transparent;
 }
 
+
+/* =========================================================
+   MOBILE / TELEGRAM MINI APP OPTIMIZATION
+   Полировка под iPhone / Android / Telegram WebApp
+   ========================================================= */
+:root{
+    --safe-top:env(safe-area-inset-top,0px);
+    --safe-right:env(safe-area-inset-right,0px);
+    --safe-bottom:env(safe-area-inset-bottom,0px);
+    --safe-left:env(safe-area-inset-left,0px);
+}
+html{
+    width:100%; min-height:100%; background:var(--bg);
+    -webkit-text-size-adjust:100%; text-size-adjust:100%;
+    overscroll-behavior-y:none;
+}
+body{
+    width:100%; min-width:0; min-height:100dvh;
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
+}
+button,.case,.filter,.profile-menu-btn{
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
+}
+button{font-family:inherit}
+.app{
+    width:100%; max-width:1100px; min-width:0;
+    padding-bottom:calc(84px + var(--safe-bottom));
+}
+.header{
+    height:calc(62px + var(--safe-top)); min-height:62px;
+    padding:var(--safe-top) max(14px,var(--safe-right)) 0 max(14px,var(--safe-left));
+}
+.header .brand{min-width:0}
+.brand-name,.brand-sub{white-space:nowrap}
+.balance{flex:none}
+.balance-box{
+    min-width:0; max-width:43vw; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap;
+    padding:8px 10px; font-size:13px;
+}
+.add{width:38px;height:38px;flex:none}
+.content{
+    width:100%; min-width:0;
+    padding:14px max(14px,var(--safe-right)) 18px max(14px,var(--safe-left));
+}
+.page{width:100%;min-width:0}
+.hero{min-height:0;padding:20px;border-radius:20px}
+.hero:after{right:12px;top:4px;font-size:82px}
+.hero h1{
+    font-size:clamp(22px,7vw,29px); max-width:100%;
+    overflow-wrap:anywhere;
+}
+.hero p{max-width:100%;font-size:13px}
+.hero-btn,.open-btn{min-height:48px;touch-action:manipulation}
+.section-head{margin-top:24px}
+.section-head h2{font-size:16px}
+.cases{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.case{
+    min-width:0;padding:9px;border-radius:16px;
+    transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+.case-image{
+    width:100%;height:auto;aspect-ratio:1/.88;min-height:0;
+    border-radius:12px;font-size:clamp(42px,14vw,58px);
+}
+.case-name{font-size:13px;line-height:1.25;overflow-wrap:anywhere}
+.case-info{gap:6px;flex-wrap:wrap;font-size:10px}
+.case-open{margin-top:14px;padding:18px 14px;border-radius:18px}
+.case-big{width:min(190px,62vw);height:min(190px,62vw);margin:4px auto 16px}
+.case-open h2{font-size:18px;line-height:1.3}
+.case-open p{font-size:12px}
+.roulette-wrap{width:100%;margin:16px auto 12px}
+.roulette-window{height:132px;border-radius:15px}
+.roulette-window:before,.roulette-window:after{width:62px}
+.roulette-track{top:6px;height:120px;gap:7px}
+.roulette-item{flex-basis:94px;height:118px;padding:6px;border-radius:11px}
+.roulette-item img{height:76px;border-radius:7px}
+.roulette-item-name{margin-top:5px;font-size:8px}
+.roulette-item-rarity{margin-top:2px;font-size:6px}
+.roulette-status{min-height:36px;padding:4px 18px 0;font-size:10px;line-height:1.35}
+.drop-info{margin:14px auto 4px;padding:14px;border-radius:15px}
+.drop-info-head{align-items:center;margin-bottom:10px}
+.drop-info-head h3{font-size:14px}
+.drop-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.drop-card{min-width:0;padding:8px}
+.drop-card-img{height:auto;aspect-ratio:1/.86;margin-bottom:6px}
+.drop-card-name{font-size:10px}
+.drop-card-rarity{font-size:8px}
+.drop-card-chance{top:6px;right:6px;padding:3px 5px;font-size:8px}
+.open-btn{max-width:none;font-size:14px}
+.inventory-top{
+    width:100%;overflow-x:auto;scrollbar-width:none;
+    padding-bottom:2px;margin-bottom:12px;
+}
+.inventory-top::-webkit-scrollbar{display:none}
+.filter{flex:0 0 auto;min-height:40px;padding:9px 12px;font-size:11px}
+.inventory{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.nft{min-width:0;padding:8px;border-radius:14px}
+.nft-img{height:auto;aspect-ratio:1/1;border-radius:10px;font-size:46px}
+.nft-name{font-size:11px;line-height:1.25;overflow-wrap:anywhere}
+.nft-price{font-size:10px}
+.rarity{top:12px;left:12px;padding:3px 5px;font-size:7px}
+.profile{padding-top:2px}
+.avatar{width:72px;height:72px;margin:8px auto}
+.profile h2{font-size:20px}
+.title-row{margin-top:7px}
+.stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:18px}
+.stat{min-width:0;padding:14px 8px;border-radius:14px}
+.stat strong{font-size:clamp(15px,5vw,21px);overflow:hidden;text-overflow:ellipsis}
+.stat span{display:block;font-size:9px;line-height:1.25}
+.profile-catalog-block{margin-top:18px}
+.profile-menu-btn{min-height:64px;padding:12px;border-radius:14px}
+.profile-menu-icon{width:38px;height:38px;border-radius:10px;font-size:19px}
+.profile-menu-text strong{font-size:12px}
+.profile-menu-text small{font-size:9px;line-height:1.3}
+.profile-menu-arrow{font-size:25px}
+.nft-catalog-panel{padding:12px;border-radius:14px}
+.nft-catalog-top{margin:-2px 1px 12px}
+.nft-catalog-sub{font-size:11px}
+.nft-catalog-hint{font-size:10px}
+.nft-catalog,.nft-category-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.catalog-nft{min-width:0;padding:8px;border-radius:14px}
+.catalog-nft-img{height:auto;aspect-ratio:1/1;min-height:0;border-radius:10px}
+.catalog-nft-name{margin-top:8px;font-size:11px}
+.catalog-nft-price{margin-top:4px;font-size:10px}
+.catalog-nft-meta,.catalog-nft-case{font-size:8px}
+.rarity-category{min-width:0}
+.rarity-category-title{gap:7px;margin-bottom:9px}
+.rarity-title-badge{min-width:0;padding:7px 9px;border-radius:8px;font-size:10px;letter-spacing:1px}
+.rarity-category-count{font-size:9px}
+.nav{padding-bottom:var(--safe-bottom);background:rgba(10,10,16,.94)}
+.nav-inner{width:100%;max-width:700px}
+.nav button{min-height:56px;padding:8px 4px 7px;font-size:9px}
+.nav button div{font-size:19px;margin-bottom:3px}
+.nav button.active::before{top:0;width:24px}
+.toast{
+    left:50%;width:max-content;max-width:calc(100vw - 28px);
+    bottom:calc(72px + var(--safe-bottom));padding:10px 14px;
+    font-size:12px;text-align:center;
+}
+.titles-modal.open{align-items:flex-end;padding:0}
+.titles-modal-card{
+    width:100%;max-width:none;max-height:88dvh;
+    border-radius:20px 20px 0 0;
+    padding:16px max(16px,var(--safe-right)) calc(16px + var(--safe-bottom)) max(16px,var(--safe-left));
+}
+.titles-modal-head h2{font-size:18px}
+.title-item{min-height:54px;padding:10px 11px}
+
+@media(max-width:360px){
+    .header{padding-left:10px;padding-right:10px}
+    .content{padding-left:10px;padding-right:10px}
+    .brand{gap:8px}
+    .brand-name{font-size:13px}
+    .brand-sub{font-size:8px}
+    .logo{width:36px;height:36px;border-radius:10px}
+    .balance{gap:5px}
+    .balance-box{max-width:36vw;font-size:11px;padding:7px 8px}
+    .add{width:34px;height:34px}
+    .hero{padding:16px}
+    .hero h1{font-size:21px}
+    .cases,.inventory,.nft-catalog,.nft-category-grid{gap:7px}
+    .case{padding:7px}
+    .case-name{font-size:11px}
+    .stats{gap:6px}
+    .stat{padding:12px 5px}
+    .stat span{font-size:8px}
+}
+@media(hover:none),(pointer:coarse){
+    .case:hover,.catalog-nft:hover,.stat:hover,.profile-menu-btn:hover,
+    .open-btn:hover:not(:disabled),.hero-btn:hover{transform:none}
+    .case:active,.profile-menu-btn:active,.filter:active,
+    .open-btn:active:not(:disabled),.hero-btn:active{transform:scale(.985)}
+    .cases .case:nth-child(5):hover{border-color:var(--line);box-shadow:none}
+    .cases .case:nth-child(5):hover::before,
+    .cases .case:nth-child(5):hover::after{opacity:0}
+    .cases .case:nth-child(5):hover .case-image img{animation:none}
+}
+@media(max-width:700px) and (prefers-reduced-motion:reduce){
+    .hero-btn::after,.logo span,.hero:after,.case-big.reveal,
+    .case-big.epic-reveal,.open-btn.is-opening::after{animation:none!important}
+}
+@supports(height:100dvh){
+    .app{min-height:100dvh}
+}
+
 </style>
 </head>
 
@@ -3504,6 +3692,27 @@ document.addEventListener('keydown', function(e){
         e.preventDefault();
     }
 });
+</script>
+
+
+<script>
+/* Mobile viewport / Telegram WebApp polish */
+(function(){
+    try{
+        const tg=window.Telegram&&window.Telegram.WebApp;
+        if(!tg)return;
+        tg.ready(); tg.expand();
+        if(typeof tg.setHeaderColor==="function")tg.setHeaderColor("#0b0b0e");
+        if(typeof tg.setBackgroundColor==="function")tg.setBackgroundColor("#0b0b0e");
+        const sync=()=>{
+            const h=tg.viewportStableHeight||tg.viewportHeight||window.innerHeight;
+            document.documentElement.style.setProperty("--tg-content-height",h+"px");
+        };
+        sync();
+        if(typeof tg.onEvent==="function")tg.onEvent("viewportChanged",sync);
+        window.addEventListener("resize",sync,{passive:true});
+    }catch(e){}
+})();
 </script>
 
 </body>

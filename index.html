@@ -3496,7 +3496,7 @@ input, textarea, select, [contenteditable="true"] {
                 <span class="price">⭐ 0</span>
             </div>
         </div>
-        <div class="case free-case" onclick="selectCase('18+ Кейс')">
+        <div class="case free-case" onclick="selectCase('18+')">
             <div class="case-image">
                 <img src="18case.png" alt="18+ Case" onerror="this.style.display='none';this.parentElement.textContent='🔞'">
             </div>
@@ -4047,7 +4047,7 @@ const caseDrops = {
         }
     ],
 
-    "18+ Кейс": [
+    "18+": [
         { name: "Clown Wars", image: "nft/Clown Wars.webp", rarity: "COMMON", chance: 70 },
         { name: "Succubus", image: "nft/Succubus.webp", rarity: "COMMON", chance: 70 },
         { name: "Count Croakula", image: "nft/Count Croakula.webp", rarity: "COMMON", chance: 70 },
@@ -4154,7 +4154,7 @@ const casePrices = {
     "Lux": 2000,
     "Dota Case": 5000,
     "Бесплатный кейс": 0,
-    "18+ Кейс": 0
+    "18+": 0
 };
 
 function parseStarPrice(value){
@@ -4380,7 +4380,7 @@ function openCasePage(){
 let selectedCase = "Кровавая ночь";
 
 function selectCase(name){
-    if(name === "18+ Кейс" && localStorage.getItem("tokenlux_age18") !== "1"){
+    if(name === "18+" && localStorage.getItem("tokenlux_age18") !== "1"){
         pending18Case = true;
         openAgeModal();
         return;
@@ -4412,7 +4412,7 @@ function selectCase(name){
         "Lux":"🍀",
         "Dota Case":"⚔️",
         "Бесплатный кейс":"🎁",
-        "18+ Кейс":"🔞"
+        "18+":"🔞"
     };
 
     const images = {
@@ -4422,7 +4422,7 @@ function selectCase(name){
         "Lux":"Lux.png",
         "Dota Case":"dota2.png",
         "Бесплатный кейс":"freecase.png",
-        "18+ Кейс":"18case.png"
+        "18+":"18case.png"
     };
 
     const caseEmoji = document.getElementById("caseEmoji");
@@ -4460,7 +4460,7 @@ function confirmAge18(){
     localStorage.setItem("tokenlux_age18","1");
     const shouldOpen = pending18Case;
     closeAgeModal();
-    if(shouldOpen) selectCase("18+ Кейс");
+    if(shouldOpen) selectCase("18+");
 }
 
 /* =========================

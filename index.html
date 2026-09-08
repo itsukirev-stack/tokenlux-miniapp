@@ -5,7 +5,49 @@
 <link rel="preconnect" href="https://tokenlux-api.tokenluxservice.workers.dev" crossorigin>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <title>TokenLux</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js">
+/* ===== COPY PROTECTION =====
+   Blocks the usual Ctrl/Cmd+C/X/V/A/S/U shortcuts, context menu,
+   selection, drag-copy and copy/cut events. This is only a client-side
+   deterrent; it cannot make HTML/source/network data impossible to inspect.
+*/
+(function setupCopyProtection(){
+    const isEditable = (el) => {
+        if (!el) return false;
+        const tag = el.tagName;
+        return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    };
+
+    document.addEventListener("contextmenu", (event) => {
+        if (!isEditable(event.target)) event.preventDefault();
+    }, { capture: true });
+
+    document.addEventListener("selectstart", (event) => {
+        if (!isEditable(event.target)) event.preventDefault();
+    }, { capture: true });
+
+    document.addEventListener("dragstart", (event) => {
+        if (!isEditable(event.target)) event.preventDefault();
+    }, { capture: true });
+
+    ["copy", "cut"].forEach(type => {
+        document.addEventListener(type, (event) => {
+            if (!isEditable(event.target)) event.preventDefault();
+        }, { capture: true });
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (isEditable(event.target)) return;
+        const key = String(event.key || "").toLowerCase();
+        const blocked = event.ctrlKey || event.metaKey;
+        if (blocked && ["c", "x", "v", "a", "s", "u"].includes(key)) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }, { capture: true });
+})();
+
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'"><noscript><link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
@@ -828,6 +870,52 @@ body::before{
 
 /* RESPONSIVE */
 
+
+/* ===== 18+ CASE ===== */
+.age18-case{
+    border-color:rgba(228,93,93,.28);
+}
+.age18-case:hover{
+    border-color:rgba(228,93,93,.62);
+    box-shadow:0 15px 40px rgba(0,0,0,.42),0 0 32px rgba(228,93,93,.12);
+}
+.age-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:260;
+}
+.age-modal.open{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+.age-modal-backdrop{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.78);
+    backdrop-filter:blur(8px);
+}
+.age-modal-card{
+    position:relative;
+    width:min(420px,100%);
+    padding:24px;
+    border-radius:20px;
+    text-align:center;
+    background:linear-gradient(145deg,#21171a,#111116);
+    border:1px solid rgba(228,93,93,.35);
+    box-shadow:0 25px 80px rgba(0,0,0,.6);
+}
+.age-modal-icon{font-size:42px;margin-bottom:10px}
+.age-modal-card h2{font-family:var(--font-display);font-size:20px}
+.age-modal-card p{margin:9px 0 20px;color:var(--muted);font-size:12px;line-height:1.5}
+.age-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.age-modal-actions button{
+    height:46px;border-radius:12px;font-weight:900;cursor:pointer;
+}
+.age-no{border:1px solid #34343b;background:#18181d;color:#aaa}
+.age-yes{border:0;background:linear-gradient(135deg,#e45d5d,#a92f3c);color:#fff}
 
 /* ===== PROFILE NFT PRICE BUTTON ===== */
 .profile-catalog-block{margin-top:28px}
@@ -3242,6 +3330,21 @@ body::before{
     }
 }
 
+
+/* ===== ANTI-COPY / ANTI-SELECT ===== */
+html, body, .app {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+input, textarea, select, [contenteditable="true"] {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    user-select: text;
+}
+
 </style>
 
 <style>
@@ -3359,7 +3462,7 @@ body::before{
     <div class="hero">
 
         <div class="hero-tag">
-            ✦ NFT DROP
+            BETA 1.0
         </div>
 
         <h1>
@@ -3385,11 +3488,20 @@ body::before{
 
     <div class="cases free-cases">
         <div class="case free-case" onclick="selectCase('Бесплатный кейс')">
-                <div class="case-image">
+            <div class="case-image">
                 <img src="freecase.png" alt="Free Case" onerror="this.style.display='none';this.parentElement.textContent='🎁'">
-            </div> 
+            </div>
             <div class="case-info">
                 <span>7 предметов</span>
+                <span class="price">⭐ 0</span>
+            </div>
+        </div>
+        <div class="case free-case" onclick="selectCase('18+ Кейс')">
+            <div class="case-image">
+                <img src="18case.png" alt="18+ Case" onerror="this.style.display='none';this.parentElement.textContent='🔞'">
+            </div>
+            <div class="case-info">
+                <span>10 предметов</span>
                 <span class="price">⭐ 0</span>
             </div>
         </div>
@@ -3677,6 +3789,20 @@ body::before{
     </div>
 </div>
 
+<!-- 18+ CONFIRMATION -->
+<div class="age-modal" id="ageModal" aria-hidden="true">
+    <div class="age-modal-backdrop" onclick="closeAgeModal()"></div>
+    <div class="age-modal-card" role="dialog" aria-modal="true" aria-labelledby="ageModalTitle">
+        <div class="age-modal-icon">🔞</div>
+        <h2 id="ageModalTitle">Вам уже есть 18 лет?</h2>
+        <p>18+ кейс доступен только совершеннолетним пользователям.</p>
+        <div class="age-modal-actions">
+            <button type="button" class="age-no" onclick="closeAgeModal()">Нет</button>
+            <button type="button" class="age-yes" onclick="confirmAge18()">Мне есть 18</button>
+        </div>
+    </div>
+</div>
+
 <!-- NAV -->
 
 <nav class="nav">
@@ -3921,6 +4047,19 @@ const caseDrops = {
         }
     ],
 
+    "18+ Кейс": [
+        { name: "Clown Wars", image: "nft/Clown Wars.webp", rarity: "COMMON", chance: 70 },
+        { name: "Succubus", image: "nft/Succubus.webp", rarity: "COMMON", chance: 70 },
+        { name: "Count Croakula", image: "nft/Count Croakula.webp", rarity: "COMMON", chance: 70 },
+        { name: "Adult Tasks", image: "nft/Adult Tasks.webp", rarity: "RARE", chance: 20 },
+        { name: "Secret Toys", image: "nft/Secret Toys.webp", rarity: "RARE", chance: 20 },
+        { name: "Heartbreaker", image: "nft/Heartbreaker.webp", rarity: "EPIC", chance: 9 },
+        { name: "Black Thorn", image: "nft/Black Thorn.webp", rarity: "EPIC", chance: 9 },
+        { name: "Doggystyle", image: "nft/Doggystyle.webp", rarity: "EPIC", chance: 9 },
+        { name: "Mission Uranus", image: "nft/Mission Uranus.webp", rarity: "LEGENDARY", chance: 2 },
+        { name: "tentaklebook", image: "nft/tentaklebook.webp", rarity: "LEGENDARY", chance: 2 }
+    ],
+
     "Бесплатный кейс": [
         { name: "santahat", image: "nft/santahat.webp", rarity: "COMMON", chance: 70 },
         { name: "mask", image: "nft/mask.webp", rarity: "COMMON", chance: 70 },
@@ -3990,7 +4129,19 @@ const nftPrices = {
     "cigar": "5",
     "1 may": "30",
     "Diamond Ring": "150",
-    "shard": "500"
+    "shard": "500",
+
+    // === 18+ кейс (бесплатный) ===
+    "Clown Wars": "5", //COMMON
+    "Succubus": "5", //COMMON
+    "Count Croakula": "5", //COMMON
+    "Adult Tasks": "30", //RARE
+    "Secret Toys": "30", //RARE
+    "Doggystyle": "150", //EPIC
+    "Heartbreaker": "150", // EPIC
+    "Black Thorn": "150", // EPIC
+    "Mission Uranus": "500", //Legendary
+    "tentaklebook": "500" //Leg
 };
 
 
@@ -4002,7 +4153,8 @@ const casePrices = {
     "Дуров": 1000,
     "Lux": 2000,
     "Dota Case": 5000,
-    "Бесплатный кейс": 0
+    "Бесплатный кейс": 0,
+    "18+ Кейс": 0
 };
 
 function parseStarPrice(value){
@@ -4175,6 +4327,16 @@ async function loadLeaderboard(force=false){const root=document.getElementById("
 function renderLeaderboard(isFallback=false){const root=document.getElementById("topList");if(!root)return;const rows=(leaderboardCache||[]).slice().sort((a,b)=>currentTopTab==="spent"?b.spent-a.spent:b.stars-a.stars).slice(0,50);if(!rows.length){root.innerHTML='<div class="top-empty">Пока нет данных для рейтинга.</div>';return}root.innerHTML=rows.map((u,i)=>{const rank=i+1,value=currentTopTab==="spent"?u.spent:u.stars,medal=rank===1?"👑":rank===2?"🥈":rank===3?"🥉":rank,avatar=u.avatar?`<img src="${escapeHtml(u.avatar)}" alt="" onerror="this.style.display='none'">`:"⭐",handle=u.username?"@"+escapeHtml(u.username):(rank===1&&isFallback?"Ваш профиль":"Игрок");return `<div class="top-user rank-${rank}"><div class="top-rank">${medal}</div><div class="top-avatar">${avatar}</div><div class="top-user-info"><div class="top-user-name">${escapeHtml(u.name)}</div><div class="top-user-sub">${handle}</div></div><div class="top-stars">⭐ ${formatStars(value)}</div></div>`}).join("")}
 function escapeHtml(value){return String(value??"").replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[ch]))}
 
+// Автообновление рейтинга каждые 3 минуты.
+// Обновляем только если вкладка «Топ» открыта, чтобы не делать лишние запросы.
+const LEADERBOARD_REFRESH_MS = 3 * 60 * 1000;
+setInterval(() => {
+    const topPage = document.getElementById("top");
+    if(topPage && topPage.classList.contains("active")){
+        loadLeaderboard(true);
+    }
+}, LEADERBOARD_REFRESH_MS);
+
 /* =========================
    NAVIGATION
 ========================= */
@@ -4218,6 +4380,11 @@ function openCasePage(){
 let selectedCase = "Кровавая ночь";
 
 function selectCase(name){
+    if(name === "18+ Кейс" && localStorage.getItem("tokenlux_age18") !== "1"){
+        pending18Case = true;
+        openAgeModal();
+        return;
+    }
 
     selectedCase = name;
 
@@ -4231,7 +4398,10 @@ function selectCase(name){
 
     const openButton = document.getElementById("openButton");
     if(openButton){
-        openButton.textContent = `ОТКРЫТЬ ЗА ⭐ ${formatStars(casePrices[name] || 0)}`;
+        const price = Number(casePrices[name] || 0);
+        openButton.textContent = price > 0
+            ? `ОТКРЫТЬ ЗА ⭐ ${formatStars(price)}`
+            : "ОТКРЫТЬ БЕСПЛАТНО";
         openButton.disabled = false;
     }
 
@@ -4241,7 +4411,8 @@ function selectCase(name){
         "Дуров":"🌌",
         "Lux":"🍀",
         "Dota Case":"⚔️",
-        "Бесплатный кейс":"🎁"
+        "Бесплатный кейс":"🎁",
+        "18+ Кейс":"🔞"
     };
 
     const images = {
@@ -4250,7 +4421,8 @@ function selectCase(name){
         "Дуров":"Durov.png",
         "Lux":"Lux.png",
         "Dota Case":"dota2.png",
-        "Бесплатный кейс":"freecase.png"
+        "Бесплатный кейс":"freecase.png",
+        "18+ Кейс":"18case.png"
     };
 
     const caseEmoji = document.getElementById("caseEmoji");
@@ -4266,6 +4438,30 @@ function selectCase(name){
     buildRoulette();
 }
 
+
+let pending18Case = false;
+
+function openAgeModal(){
+    const modal = document.getElementById("ageModal");
+    if(!modal) return;
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden","false");
+}
+
+function closeAgeModal(){
+    const modal = document.getElementById("ageModal");
+    if(!modal) return;
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+    pending18Case = false;
+}
+
+function confirmAge18(){
+    localStorage.setItem("tokenlux_age18","1");
+    const shouldOpen = pending18Case;
+    closeAgeModal();
+    if(shouldOpen) selectCase("18+ Кейс");
+}
 
 /* =========================
    RANDOM NFT
